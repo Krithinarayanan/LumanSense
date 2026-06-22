@@ -1,0 +1,25 @@
+{
+    "mcpServers": {
+        "vision-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/vision_service.py"
+            ]
+        },
+        "controller-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/controller_service.py"
+            ]
+        },
+        "energy-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/energy_service.py"
+            ]
+        }
+    }
+}

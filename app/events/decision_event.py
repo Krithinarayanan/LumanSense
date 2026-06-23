@@ -12,6 +12,7 @@ class DecisionEvent:
     """Dataclass representing a hysteresis brightness decision for a lighting zone.
 
     Attributes:
+        eventid: Unique identifier for the event.
         zone: The zone label (e.g. "A").
         event_type: The type of event leading to the decision.
         brightness: The brightness level (0-100) set.

@@ -1,3 +1,9 @@
+"""Main entry point for the LumanSense application.
+
+This script initializes the Orchestrator agent and runs the LumanSense control loop,
+simulating real-time inputs using a mock YOLO vision sensor feed.
+"""
+
 import asyncio
 
 from google.adk.apps import App
@@ -17,6 +23,15 @@ app = App(  # noqa: F811
 
 # --- Execution Setup ---
 async def main():
+    """Starts the YOLO mock producer and runs the Orchestrator runner.
+
+    This function coordinates the background execution of the mock vision feed
+    and the asynchronous execution loop of the root agent.
+
+    Raises:
+        KeyboardInterrupt: If the execution is stopped by a user interrupt.
+    """
+
     # 1. Start the yolo mock producer in the background
     background_tasks = set()
     producer_task = asyncio.create_task(yolo_mock_producer())

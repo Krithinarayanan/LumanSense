@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Typing and validation schemas.
+
+This module defines common validation models (e.g. Feedback) used across the application.
+"""
+
 import uuid
 from typing import (
     Literal,

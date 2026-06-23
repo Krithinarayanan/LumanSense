@@ -10,7 +10,11 @@ from app.mcp.vision_service import process_detection
 
 
 async def yolo_mock_producer():
-    """Loops through mock detection scenarios and publishes events to Vision MCP."""
+    """Loops through mock detection scenarios and publishes events to Vision MCP.
+
+    This mock simulates real-time pedestrian counting per zone by processing
+    sequential detection frames and feeding them into the vision service.
+    """
     for index, block in enumerate(scenarios):
         for detection in block:
             await process_detection(

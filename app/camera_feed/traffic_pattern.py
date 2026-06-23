@@ -7,24 +7,24 @@ and printing matrix tables from historical pedestrian journeys.
 from app.training_data import journeys
 
 
-def build_transition_matrix(traffic_history_records_path: str | None = None) -> dict:
-    """Builds a transition count matrix from history records.
-
-    Args:
-        traffic_history_records_path: Optional path to the traffic logs.
+def build_transition_matrix() -> dict:
+    """Builds a transition count matrix from historical journey paths.
 
     Returns:
-        A dict containing transition counts in nested and flat formats.
+        A dict containing transition counts in nested and flat formats:
+            - "tuple_keys" (dict): Dict with tuple keys (from_zone, to_zone) and counts.
+            - "string_keys" (dict): Dict with string keys "from_zone -> to_zone" and counts.
+            - "nested_dict" (dict): Nested dictionary with from_zone keys containing to_zone counts.
     """
-
-    # Build transition counts
     transitions = {}
     for journey in journeys:
         path = journey.get("path", [])
+
         for i in range(len(path) - 1):
-            from_state = path[i]
-            to_state = path[i + 1]
-            transition = (from_state, to_state)
+            from_zone = path[i]["zone"]
+            to_zone = path[i + 1]["zone"]
+
+            transition = (from_zone, to_zone)
             transitions[transition] = transitions.get(transition, 0) + 1
 
     # Format transition changes dict in multiple common formats for clarity
@@ -48,8 +48,15 @@ def build_transition_matrix(traffic_history_records_path: str | None = None) -> 
 
 
 def build_probability_matrix(nested_dict: dict) -> tuple[list[str], dict]:
-    """
-    Builds a transition probability distribution matrix from transition counts.
+    """Builds a transition probability distribution matrix from transition counts.
+
+    Args:
+        nested_dict: Nested dictionary containing transition counts.
+
+    Returns:
+        A tuple containing:
+            - sorted_states (list[str]): Sorted unique state names.
+            - prob_matrix (dict): Nested dictionary mapping state names to transition probabilities.
     """
     # 1. Identify all unique states
     all_states = set(nested_dict.keys())
@@ -76,8 +83,11 @@ def build_probability_matrix(nested_dict: dict) -> tuple[list[str], dict]:
 
 
 def pretty_print_matrix(states: list[str], prob_matrix: dict):
-    """
-    Pretty prints the transition probability matrix as a table.
+    """Pretty prints the transition probability matrix as a formatted table.
+
+    Args:
+        states: List of sorted state names.
+        prob_matrix: Nested transition probability dictionary.
     """
     # Print header
     header = f"{'State':<6} | " + " | ".join(f"{s:<6}" for s in states)

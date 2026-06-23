@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Telemetry utilities module.
+
+This module provides utility functions to configure OpenTelemetry and GenAI telemetry.
+"""
+
 import logging
 import os
 
 
 def setup_telemetry() -> str | None:
-    """Configure OpenTelemetry and GenAI telemetry with GCS upload."""
+    """Configure OpenTelemetry and GenAI telemetry with GCS upload.
+
+    Returns:
+        The GCS logs bucket name if enabled; otherwise None.
+    """
 
     bucket = os.environ.get("LOGS_BUCKET_NAME")
     capture_content = os.environ.get(

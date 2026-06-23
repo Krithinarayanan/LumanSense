@@ -45,16 +45,15 @@ def plan_brightness_for_steps(
     current_zone: str,
     n_steps: int,
 ) -> list[dict[str, Any]]:
-    """
-    Predicts the expected brightness for the next n steps based on state transitions.
+    """Predicts the expected brightness for the next n steps based on state transitions.
 
     Args:
         current_zone: The current state name (e.g. "Z1").
         n_steps: Number of future transition steps/paths to plan for.
 
     Returns:
-        A list of dictionaries containing the zone label, step number, the state probability distribution,
-        and the planned (expected) brightness for that step.
+        A list of dictionaries mapping zone names to their planned parameters
+        (zone, probability distribution, and target brightness).
     """
     brightess_plan_with_n_step_hop = []
     probability_distribution = predict_distribution_n_steps(

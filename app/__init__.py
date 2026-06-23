@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""LumanSense root package.
+
+This package exposes the root LumanSense application object.
+"""
+
 from .agent import app
 
 __all__ = ["app"]

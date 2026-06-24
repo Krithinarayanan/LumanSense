@@ -38,7 +38,6 @@ def get_traffic_trends() -> list[dict]:
     for (ts, zone), count in counts.items():
         result.append({"timestamp": ts, "zone": zone, "count": count})
     result.sort(key=lambda x: (x["timestamp"], x["zone"]))
-    print("traffic trend:\n", result)
     return result
 
 

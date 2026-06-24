@@ -3,7 +3,8 @@
 This module simulates a real-time vision sensor feed by publishing mock pedestrian detections.
 """
 
-import asyncio
+from asyncio import sleep
+
 
 from app.camera_feed.scenario import scenarios
 from app.mcp.vision_service import process_detection
@@ -21,7 +22,7 @@ async def yolo_mock_producer():
                 eventid=index,
                 zone=detection["zone"],
                 pedestrians=detection["pedestrians"],
+                timestamp=detection["timestamp"],
             )
-            await asyncio.sleep(2)
-        await asyncio.sleep(3)
-    await process_detection(eventid=0, zone=None, pedestrians=0)
+            await sleep(1)
+    await process_detection(eventid=0, zone=None, pedestrians=0,timestamp=None)

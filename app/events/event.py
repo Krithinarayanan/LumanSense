@@ -31,7 +31,12 @@ class DetectionEvent:
     ema: float
     trend: str
     delta: float
+    flag:bool
     zone: str | None = None
+    cluster_label: str = "None"
+    trend_label: str = "@TODO"
+    current_occupancy_forecast: int = 0
+    delta_occupancy: float = 0.0
 
     @property
     def new_brightness(self) -> int:

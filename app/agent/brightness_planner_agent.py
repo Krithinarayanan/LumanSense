@@ -13,7 +13,7 @@ from google.adk.agents import Agent
 from google.adk.models import Gemini
 from google.genai import types
 
-from app.agent.stats_agent import predict_distribution_n_steps
+from app.analytics.stats_engine import predict_distribution_n_steps
 
 load_dotenv()
 
@@ -38,8 +38,6 @@ if use_vertex:
 def discover_brightness_plan():
     """Tool wrapper to plan and print future brightness levels for Zone A."""
     brightness_plan = plan_brightness_for_steps(current_zone="A", n_steps=3)
-    print("Discovered plan_brightness_per_zone (3 steps) for Zone A:", brightness_plan)
-
 
 def plan_brightness_for_steps(
     current_zone: str,

@@ -9,7 +9,7 @@ from app.events.event import DetectionEvent
 from app.events.event_bus import event_queue
 from app.events.event_types import EventType
 from app.events.trend_types import TrendType
-from app.mcp.trend_analyzer import calculate_exponential_moving_averages
+from app.mcp.trend_analyzer import update_ema_and_trend
 
 mcp = FastMCP("VisionMCP")
 
@@ -116,7 +116,7 @@ async def process_detection(eventid: int, zone: str, pedestrians: int, timestamp
             "pedestrians": pedestrians,
             "event_type": "None",
         }
-    (trend, ema) = calculate_exponential_moving_averages(zone, pedestrians)
+    (trend, ema) = update_ema_and_trend(zone, pedestrians)
     current_event_type = classify_event(pedestrians, trend, ema)
 
     event = _create_detection_event(

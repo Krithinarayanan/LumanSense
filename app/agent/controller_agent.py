@@ -18,8 +18,8 @@ from app.mcp.database_mcp import setup_database as _setup_database
 from app.mcp.energy_service import calculate_energy_saved
 
 brightness_plan = {}
-linear_models = {}
-
+cluster_discovery_map = {}
+centroids = {}
 
 def get_decision_reason(event_type: EventType, pedestrians: int) -> str:
     """Returns a user-friendly description of the reasons leading to the decision.
@@ -57,7 +57,7 @@ def get_decision_reason(event_type: EventType, pedestrians: int) -> str:
     return "Unknown event"
 
 
-async def _save_detection_record(agent, event, forecast_prob: float) -> None:
+async def _save_detection_record(agent, event, forecast_prob: float, cluster_label: str) -> None:
     """Saves the pedestrian detection event to the persistent database.
 
     Args:
@@ -70,7 +70,7 @@ async def _save_detection_record(agent, event, forecast_prob: float) -> None:
         "zone": event.zone,
         "pedestrians": event.pedestrians,
         "ema": event.ema,
-        "cluster_label": event.cluster_label,
+        "cluster_label": cluster_label,
         "trend_label": event.event_type.value,
         "zone_occupancy_forecast": forecast_prob,
         "delta": event.pedestrians - event.ema,
@@ -117,6 +117,7 @@ async def _save_decision_record(
     decision: DecisionEvent,
     plan_brightness: float,
     brightness_to_lamp: float,
+    cluster_label: str,
 ) -> None:
     """Saves the actuated brightness decision to the database.
 
@@ -126,6 +127,7 @@ async def _save_decision_record(
         decision: The DecisionEvent instance.
         plan_brightness: The predicted brightness from the planner.
         brightness_to_lamp: The final actuated brightness.
+        cluster_label: The cluster label.
     """
     decision_data = {
         "timestamp": event.timestamp,
@@ -137,6 +139,7 @@ async def _save_decision_record(
         "brightness_plan": plan_brightness,
         "reactive_brightness": decision.brightness,
         "brightness_to_lamp": brightness_to_lamp,
+        "cluster_label": cluster_label,
     }
     if hasattr(agent, "call_tool"):
         await agent.call_tool("database-mcp", "save_decision_event", decision_data)
@@ -173,24 +176,39 @@ async def run_luman_sense_loop(agent, iterations=30):
         agent: The controller agent instance driving this loop.
         iterations: Optional number of iterations to run (defaults to 30).
     """
+    global centroids
+    if not centroids:
+        await get_traffic_clusters(agent)
     count = 0
     sum_energy_saved = 0
     sum_brightness = 0
     more_events = True
 
-    # Initialize variables to safely persist state across iterations
-    brightness_to_lamp = 50.0
-    plan_brightness = 50
-    decision = DecisionEvent(
-        eventid=-1,
-        zone="A",
-        event_type="LOW_ACTIVITY",
-        brightness=50,
-        reason="initial state",
-        energy_saved_watts=calculate_energy_saved(50),
-        timestamp=datetime.now().strftime("%H:%M"),
-    )
+    # Maintain last decision and brightness level for each zone to prevent cross-zone leaks
+    last_decisions = {}
+    last_brightness_to_lamp = {}
 
+    cluster_map = {
+        0: "LOW_TRAFFIC",
+        1: "CLEARING_TRAFFIC",
+        2: "MODERATE_TRAFFIC",
+        3: "TRAFFIC_SURGE",
+        4: "PEAK_TRAFFIC",
+    }
+
+    for z in ["A", "B", "C", "D"]:
+        last_decisions[z] = DecisionEvent(
+            eventid=-1,
+            zone=z,
+            event_type="LOW_ACTIVITY",
+            brightness=50,
+            reason="initial state",
+            energy_saved_watts=calculate_energy_saved(50),
+            timestamp=datetime.now().strftime("%H:%M"),
+        )
+        last_brightness_to_lamp[z] = 50.0
+
+    traffic_history = []
     while more_events:
         try:
             event = await event_queue.get()
@@ -203,16 +221,45 @@ async def run_luman_sense_loop(agent, iterations=30):
                 zone, {"zone": zone, "prob dist": 0.0, "brightness": 50}
             )
             forecast_prob = zone_plan["prob dist"]
+            plan_brightness = zone_plan["brightness"]
+
+            print("************")
+            print(zone, event.pedestrians, event.ema)
+            print(centroids[zone])
+            print("************")
+            if hasattr(agent, "call_tool"):
+                cluster_id = await agent.call_tool("k-means-clusterer-mcp", "predict", {"zone": zone, "data": [[event.pedestrians, event.ema]], "centroids": centroids[zone]})
+                if isinstance(cluster_id, list):
+                    cluster_id = cluster_id[0]
+            else:
+                from app.mcp.k_means_clusterer import predict as _predict
+                cluster_ids = _predict(zone, [[event.pedestrians, event.ema]], centroids[zone])
+                cluster_id = cluster_ids[0]
+
+            cluster_label = cluster_map[cluster_id]
+            print("cluster_label:", cluster_label)
+            traffic_history.append({
+                "cluster_id": cluster_id,
+                "zone": zone,
+                "pedestrians": event.pedestrians,
+                "ema": event.ema
+            })
 
             # Save detection details
-            await _save_detection_record(agent, event, forecast_prob)
+            await _save_detection_record(agent, event, forecast_prob, cluster_label)
 
             if event.flag:
-                plan_brightness = zone_plan["brightness"]
                 brightness_to_lamp, decision = _compute_brightness_and_decision(event, zone_plan)
-                await _save_decision_record(agent, event, decision, plan_brightness, brightness_to_lamp)
-
+                last_decisions[zone] = decision
+                last_brightness_to_lamp[zone] = brightness_to_lamp
+                await _save_decision_record(agent, event, decision, plan_brightness, brightness_to_lamp, cluster_label)
+            else:
+                decision = last_decisions[zone]
+                brightness_to_lamp = last_brightness_to_lamp[zone]
+                
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Action Error: {e}")
             decision = DecisionEvent(
                 eventid=-1,
@@ -250,7 +297,7 @@ async def run_luman_sense_loop(agent, iterations=30):
     print(f"Total energy saved: {sum_energy_saved:.2f} W")
     avg_brightness = sum_brightness / count if count > 0 else 0.0
     print(f"Average brightness: {avg_brightness:.2f}")
-    fetch_analytics(agent)
+    await fetch_analytics(agent)
 
 
 def log(
@@ -306,7 +353,7 @@ def log(
     print("=" * 60)
 
 
-def discover_brightness_plan():
+async def discover_brightness_plan(agent=None):
     """Calculates future transition probabilities and updates global brightness_plan.
 
     Uses `plan_brightness_for_steps` to compute the expected brightness levels
@@ -333,6 +380,17 @@ def discover_brightness_plan():
     print("-" * 45)
 
     for _zone, plan_details in brightness_plan.items():
+        if hasattr(agent, "call_tool"):
+            await agent.call_tool("database-mcp", "save_footfall_predictions",
+                zone=_zone,
+                probability=plan_details["prob dist"],
+                brightness=plan_details["brightness"])
+        else:
+            from app.mcp.database_mcp import save_footfall_predictions as _save_footfall_predictions
+            _save_footfall_predictions(
+                zone=_zone,
+                probability=plan_details["prob dist"],
+                brightness=plan_details["brightness"])
         print(
             f"{plan_details['zone']:<8}{plan_details['prob dist']:<12.2f}{plan_details['brightness']}%"
         )
@@ -340,74 +398,32 @@ def discover_brightness_plan():
     print("-" * 45)
     print("[STATUS] Predictive lighting schedule established")
 
-
-def fit_footfall_line_for_zones(agent):
-    """Fits a linear regression model to pedestrian footfall data for Zone A."""
-    global linear_models
+async def setup_database(agent):
     if hasattr(agent, "call_tool"):
-        linear_models = agent.call_tool(
-            "linear-regression-mcp", "build_fit_line_for_all_zones"
-        )
-    else:
-        from app.mcp.linear_regression import build_fit_line_for_all_zones
-
-        linear_models = build_fit_line_for_all_zones()
-
-    print("\n[LINEAR REGRESSION MODEL]")
-    print("-" * 45)
-    for _zone, model in linear_models.items():
-        print(
-            f"Zone: {_zone} : Slope: {model['slope']:.2f} | Intercept: {model['intercept']:.2f} | MSE: {model['mse']:.2f}"
-        )
-    print("-" * 45)
-    print("[STATUS] Linear regression model established")
-
-
-def calculate_brightness_for_zones(agent, zone_pedestrians: dict[str, int]):
-    """Calculates brightness levels for all zones based on pedestrian counts."""
-    global brightness_plan
-    global linear_models
-    BRIGHTNESS_ZONES = ["A", "B", "C", "D"]
-    for _zone in BRIGHTNESS_ZONES:
-        if _zone not in brightness_plan:
-            brightness_plan[_zone] = {
-                "zone": _zone,
-                "prob dist": 0.0,
-                "brightness": 50,
-            }
-
-    for _zone, model in linear_models.items():
-        pedestrians = zone_pedestrians.get(_zone, 0)
-        brightness = model["slope"] * pedestrians + model["intercept"]
-        brightness = max(0, min(100, brightness))
-        brightness_plan[_zone]["brightness"] = brightness
-
-    print("\n[BRIGHTNESS] Brightness Levels")
-    print("-" * 45)
-    print(f"{'Zone':<8}{'Brightness'}")
-    print("-" * 45)
-    for _zone, brightness in brightness_plan.items():
-        print(f"{_zone:<8}{brightness['brightness']}%")
-    print("-" * 45)
-    print("[STATUS] Brightness levels established")
-
-
-def setup_database(agent):
-    if hasattr(agent, "call_tool"):
-        agent.call_tool("database-mcp", "setup_database")
+        await agent.call_tool("database-mcp", "setup_database")
     else:
         _setup_database()
     print("[STATUS] Database setup complete")
 
 
-def fetch_analytics(agent=None):
+async def fetch_analytics(agent=None):
     if hasattr(agent, "call_tool"):
-        agent.call_tool("database-mcp", "fetch_analytics")
+        await agent.call_tool("database-mcp", "fetch_analytics")
     else:
         from app.mcp.database_mcp import fetch_analytics as _fetch_analytics
 
         _fetch_analytics()
 
+
+async def get_traffic_clusters(agent=None):
+    global cluster_discovery_map
+    global centroids
+    if hasattr(agent, "call_tool"):
+        cluster_discovery_map, centroids = await agent.call_tool("k-means-clusterer-mcp", "get_traffic_clusters")
+    else:
+        from app.mcp.k_means_clusterer import get_traffic_clusters as _get_traffic_clusters
+        cluster_discovery_map, centroids = _get_traffic_clusters()
+    return cluster_discovery_map, centroids
 
 controller_agent = Agent(
     name="controller_agent",
@@ -424,7 +440,7 @@ controller_agent = Agent(
     """,
     tools=[
         setup_database,
-        discover_brightness_plan,
+        discover_brightness_plan,        
         run_luman_sense_loop
     ],
 )

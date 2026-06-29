@@ -1,35 +1,13 @@
-"""Statistics agent module.
+"""Statistics engine module.
 
-This module defines the LumanSense Statistics Agent, which computes statistical
-metrics, transition counts, probability matrices, and predicts future states.
+This module provides pure Python functions for computing traffic transition matrices,
+predicting state distributions over multiple steps, and other statistical helpers.
 """
-
-import os
-
-import google.auth
-from dotenv import load_dotenv
-from google.adk.agents import Agent
-from google.adk.models import Gemini
-from google.genai import types
 
 from app.camera_feed.traffic_pattern import build_probability_matrix
 from app.camera_feed.traffic_pattern import (
     build_transition_matrix as _build_transition_matrix,
 )
-
-load_dotenv()
-
-# --- Configuration Setup ---
-use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "True").lower() == "true"
-if use_vertex:
-    try:
-        _, project_id = google.auth.default()
-        os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-    except Exception:
-        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", "placeholder-project")
-    os.environ["GOOGLE_CLOUD_LOCATION"] = os.environ.get(
-        "GOOGLE_CLOUD_LOCATION", "global"
-    )
 
 
 def build_transition_matrix() -> dict:
@@ -131,36 +109,37 @@ def predict_distribution(
     return predict_distribution_n_steps(current_state, 1)
 
 
-# Initialize stats_agent
-stats_agent = Agent(
-    name="stats_agent",
-    model=Gemini(
-        model="gemini-3.1-flash-lite",
-        retry_options=types.HttpRetryOptions(attempts=3),
-    ),
-    instruction="""
-    You are the Luman-Sense Statistics Agent.
-    You compute statistical metrics, state transitions, and analyze history logs.
-    Use the tools provided to build transition matrices, get state vectors, and predict distributions.
-    """,
-    tools=[
-        build_transition_matrix,
-        predict_distribution,
-        predict_distribution_n_steps,
-        get_state_vector,
-        get_transition_matrix,
-    ],
-)
+def get_exponential_moving_averages(x_list: list[float], alpha: float) -> list[float]:
+    """Computes the exponential moving average of a list of numbers.
 
-if __name__ == "__main__":
-    # Test transition probability prediction
-    print("Testing build_transition_matrix:")
-    print(build_transition_matrix()["string_keys"])
+    Args:
+        x_list: The list of numbers.
+        alpha: The smoothing factor.
 
-    print("\nTesting get_transition_matrix:")
-    t_mat = get_transition_matrix()
-    print("States:", t_mat["states"])
-    print("Matrix:", t_mat["matrix"])
+    Returns:
+        A list of the same length as x_list, where each element is the EMA of the corresponding element in x_list.
+    """
+    ema_list = []
+    ema = x_list[0]
+    ema_list.append(ema)
+    for i in range(1, len(x_list)):
+        ema = alpha * x_list[i] + (1 - alpha) * ema
+        ema_list.append(ema)
+    return ema_list
 
-    print("\nTesting predict_distribution_n_steps (3 steps) from A:")
-    print(predict_distribution_n_steps("Z1", n_steps=3))
+
+def get_five_point_summary(x_list: list):
+    """Computes the five point summary of a list of numbers.
+
+    Args:
+        x_list: The list of numbers.
+
+    Returns:
+        A tuple of (min, Q1, median, Q3, max).
+    """
+    x_list.sort()
+    n = len(x_list)
+    q1 = x_list[n // 4]
+    median = x_list[n // 2]
+    q3 = x_list[3 * n // 4]
+    return (x_list[0], q1, median, q3, x_list[-1])

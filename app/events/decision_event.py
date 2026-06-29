@@ -28,3 +28,4 @@ class DecisionEvent:
     reason: str
     energy_saved_watts: int
     timestamp: datetime
+    

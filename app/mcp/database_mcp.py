@@ -2,19 +2,18 @@ import os
 import sqlite3
 from typing import TYPE_CHECKING
 
-# FIX: FastMCP is only needed when running the MCP server process.
-# Importing it at module level caused ModuleNotFoundError in Streamlit's
-# Python environment. We now import it lazily — only when _get_mcp() is
-# called, which only happens when the file is run as __main__.
+# FastMCP is initialized dynamically to separate database access from the RPC layer.
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 _mcp_instance = None
 
+
 def _get_mcp() -> "FastMCP":
     global _mcp_instance
     if _mcp_instance is None:
         from mcp.server.fastmcp import FastMCP
+
         _mcp_instance = FastMCP("DatabaseMCP")
     return _mcp_instance
 
@@ -27,10 +26,8 @@ def get_connection():
     return sqlite3.connect(DB_FILE)
 
 
-# ── Tool registration helper ───────────────────────────────────────────────────
-# Functions are defined as plain Python first, then registered with @mcp.tool()
-# only when the MCP server is actually being launched (see __main__ block below).
-# This means importing this module from the agent or UI costs zero MCP overhead.
+# ── Core Database Operations ──
+
 
 def setup_database():
     conn = get_connection()
@@ -60,8 +57,7 @@ def setup_database():
             reactive_brightness INTEGER,
             brightness INTEGER,
             reason TEXT,
-            energy_saved_watts INTEGER,
-            cluster_label TEXT
+            energy_saved_watts INTEGER
         )
     """)
 
@@ -112,23 +108,23 @@ def save_detection_event(event={}):
     conn = get_connection()
     if event is not None:
         if isinstance(event, dict):
-            timestamp             = event.get("timestamp")
-            zone                  = event.get("zone")
-            pedestrians           = event.get("pedestrians")
-            ema                   = event.get("ema")
-            cluster_label         = event.get("cluster_label")
-            trend_label           = event.get("trend_label")
+            timestamp = event.get("timestamp")
+            zone = event.get("zone")
+            pedestrians = event.get("pedestrians")
+            ema = event.get("ema")
+            cluster_label = event.get("cluster_label")
+            trend_label = event.get("trend_label")
             zone_occupancy_forecast = event.get("zone_occupancy_forecast")
-            delta_occupancy       = event.get("delta")
+            delta_occupancy = event.get("delta")
         else:
-            timestamp             = event.timestamp
-            zone                  = event.zone
-            pedestrians           = event.pedestrians
-            ema                   = event.ema
-            cluster_label         = event.cluster_label
-            trend_label           = event.trend_label
+            timestamp = event.timestamp
+            zone = event.zone
+            pedestrians = event.pedestrians
+            ema = event.ema
+            cluster_label = event.cluster_label
+            trend_label = event.trend_label
             zone_occupancy_forecast = event.zone_occupancy_forecast
-            delta_occupancy       = event.delta
+            delta_occupancy = event.delta
 
     conn.execute(
         """
@@ -137,8 +133,16 @@ def save_detection_event(event={}):
              zone_occupancy_forecast, delta_occupancy, cluster_label)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (timestamp, zone, pedestrians, ema, trend_label,
-         zone_occupancy_forecast, delta_occupancy, cluster_label),
+        (
+            timestamp,
+            zone,
+            pedestrians,
+            ema,
+            trend_label,
+            zone_occupancy_forecast,
+            delta_occupancy,
+            cluster_label,
+        ),
     )
     conn.commit()
     conn.close()
@@ -148,25 +152,29 @@ def save_decision_event(event={}):
     conn = get_connection()
     if event is not None:
         if isinstance(event, dict):
-            timestamp          = event.get("timestamp")
-            zone               = event.get("zone")
-            state              = event.get("state")
-            brightness_plan    = event.get("brightness_plan")
+            timestamp = event.get("timestamp")
+            zone = event.get("zone")
+            state = event.get("state")
+            brightness_plan = event.get("brightness_plan")
             reactive_brightness = event.get("reactive_brightness")
             brightness_to_lamp = event.get("brightness_to_lamp")
             energy_saved_watts = event.get("energy_saved_watts")
-            reason             = event.get("reason")
+            reason = event.get("reason")
         else:
-            timestamp          = event.timestamp
-            zone               = event.zone
-            state              = getattr(event, "state", getattr(event, "event_type", None))
-            if state is not None and not isinstance(state, str) and hasattr(state, "name"):
+            timestamp = event.timestamp
+            zone = event.zone
+            state = getattr(event, "state", getattr(event, "event_type", None))
+            if (
+                state is not None
+                and not isinstance(state, str)
+                and hasattr(state, "name")
+            ):
                 state = state.name
-            brightness_plan    = event.brightness_plan
+            brightness_plan = event.brightness_plan
             reactive_brightness = event.reactive_brightness
             brightness_to_lamp = event.brightness_to_lamp
             energy_saved_watts = event.energy_saved_watts
-            reason             = event.reason
+            reason = event.reason
 
     conn.execute(
         """
@@ -175,8 +183,16 @@ def save_decision_event(event={}):
              brightness, energy_saved_watts, reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (str(timestamp), zone, state, brightness_plan,
-         reactive_brightness, brightness_to_lamp, energy_saved_watts, reason),
+        (
+            str(timestamp),
+            zone,
+            state,
+            brightness_plan,
+            reactive_brightness,
+            brightness_to_lamp,
+            energy_saved_watts,
+            reason,
+        ),
     )
     conn.commit()
     conn.close()
@@ -202,7 +218,13 @@ def save_cluster_training_history(item: dict):
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO trained_cluster_data (timestamp, cluster_id, zone, pedestrians, ema) VALUES (?, ?, ?, ?, ?)",
-        (item["timestamp"], item["cluster_id"], item["zone"], item["pedestrians"], item["ema"]),
+        (
+            item["timestamp"],
+            item["cluster_id"],
+            item["zone"],
+            item["pedestrians"],
+            item["ema"],
+        ),
     )
     conn.commit()
     conn.close()
@@ -247,7 +269,7 @@ def get_decision_event(limit=80):
     return [dict(row) for row in rows]
 
 
-# Alias kept for backward compatibility
+# Reference mapping for zone decision queries
 get_decision_events = get_decision_event
 
 
@@ -347,13 +369,13 @@ def get_zone_config(zone: str):
 def fetch_analytics():
     """Fetches and prints system analytics."""
     try:
-        total_detections    = get_total_detection_events()
-        total_decisions     = get_total_decision_events()
-        active_zone_result  = get_most_active_zone()
-        active_zone         = active_zone_result[0] if active_zone_result else "N/A"
-        active_zone_count   = active_zone_result[1] if active_zone_result else 0
-        avg_pedestrians     = get_average_pedestrians()
-        total_energy        = get_total_energy_saved()
+        total_detections = get_total_detection_events()
+        total_decisions = get_total_decision_events()
+        active_zone_result = get_most_active_zone()
+        active_zone = active_zone_result[0] if active_zone_result else "N/A"
+        active_zone_count = active_zone_result[1] if active_zone_result else 0
+        avg_pedestrians = get_average_pedestrians()
+        total_energy = get_total_energy_saved()
 
         print("\n" + "=" * 40)
         print("LUMAN-SENSE SYSTEM ANALYTICS")
@@ -367,40 +389,59 @@ def fetch_analytics():
     except Exception as e:
         print(f"Error fetching analytics: {e}")
 
+
 def load_all_data():
     import pandas as pd
+
     conn = get_connection()
     kpis = {
-        "detection_count":  conn.execute("SELECT COUNT(*) FROM detection_events").fetchone()[0],
-        "decision_count":   conn.execute("SELECT COUNT(*) FROM decision_events").fetchone()[0],
+        "detection_count": conn.execute(
+            "SELECT COUNT(*) FROM detection_events"
+        ).fetchone()[0],
+        "decision_count": conn.execute(
+            "SELECT COUNT(*) FROM decision_events"
+        ).fetchone()[0],
         "most_active_zone": conn.execute(
             "SELECT zone FROM detection_events GROUP BY zone ORDER BY COUNT(zone) DESC LIMIT 1"
         ).fetchone()[0],
-        "total_saved": conn.execute("SELECT SUM(energy_saved_watts) FROM decision_events").fetchone()[0] or 0,
+        "total_saved": conn.execute(
+            "SELECT SUM(energy_saved_watts) FROM decision_events"
+        ).fetchone()[0]
+        or 0,
     }
-    pedestrian_chart = pd.read_sql_query("""
+    pedestrian_chart = pd.read_sql_query(
+        """
         SELECT timestamp, zone, sum(pedestrians) AS pedestrians
         FROM detection_events GROUP BY timestamp, zone
         ORDER BY timestamp DESC LIMIT 30
-    """, conn)
-    detection_events = pd.read_sql_query("""
+    """,
+        conn,
+    )
+    detection_events = pd.read_sql_query(
+        """
         SELECT timestamp AS "Timestamp", zone AS "Zone",
                zone_occupancy_forecast AS "Zone Occupancy Forecast",
                pedestrians AS "Pedestrians", ema AS "EMA",
                delta_occupancy AS "Delta Occupancy",
                trend_label AS "Trend Label", cluster_label AS "Cluster Label"
         FROM detection_events ORDER BY timestamp DESC LIMIT 30
-    """, conn)
-    decision_events = pd.read_sql_query("""
+    """,
+        conn,
+    )
+    decision_events = pd.read_sql_query(
+        """
         SELECT timestamp AS "Timestamp", zone AS "Zone", state AS "State",
                pred_brightness AS "Brightness Plan",
                reactive_brightness AS "Reactive Brightness",
                brightness AS "Brightness to Lamp",
                energy_saved_watts AS "Energy Saved (W)",
-               reason AS "Reason", cluster_label AS "Cluster Label"
+               reason AS "Reason"
         FROM decision_events ORDER BY timestamp DESC LIMIT 30
-    """, conn)
-    zone_summary = pd.read_sql_query("""
+    """,
+        conn,
+    )
+    zone_summary = pd.read_sql_query(
+        """
         SELECT t.zone AS Zone, SUM(t.pedestrians) AS Pedestrians,
                COUNT(c.state) AS Dimming_Actions_Taken,
                AVG(c.brightness) AS Avg_Brightness,
@@ -408,14 +449,14 @@ def load_all_data():
         FROM detection_events t
         LEFT JOIN decision_events c ON t.zone=c.zone AND t.timestamp=c.timestamp
         GROUP BY t.zone
-    """, conn)
+    """,
+        conn,
+    )
     conn.close()
     return kpis, pedestrian_chart, detection_events, decision_events, zone_summary
 
-# ── MCP server entrypoint ──────────────────────────────────────────────────────
-# Run with:  uv run python -m app.mcp.database_mcp
-# This block only executes when the file is launched directly as a server.
-# Importing this module from the agent/UI never touches FastMCP.
+
+# ── Database Service Entrypoint ──
 if __name__ == "__main__":
     mcp = _get_mcp()
 

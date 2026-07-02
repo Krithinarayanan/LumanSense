@@ -1,26 +1,27 @@
-"""Ask Lumen Agent module.
+"""Ask luman Agent module.
 
-This module defines the ask_lumen_agent, which helps users query and analyze
+This module defines the ask_luman_agent, which helps users query and analyze
 smart lighting database statistics, run predictions, and audit decisions.
 """
 
 import os
 import sqlite3
+
 import google.auth
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
 from google.genai import types
 
+from app.agent.luman_sense_critic_agent import luman_sense_criti_agent
+from app.analytics.stats_engine import predict_distribution_n_steps
 from app.mcp.database_mcp import (
-    get_detection_event,
-    get_decision_event,
     get_average_pedestrians,
+    get_decision_event,
+    get_detection_event,
     get_total_energy_saved,
     get_zone_config,
 )
-from app.analytics.stats_engine import predict_distribution_n_steps
-from app.agent.luman_sense_critic_agent import luman_sense_criti_agent
 
 load_dotenv()
 
@@ -69,34 +70,34 @@ def query_database(sql_query: str) -> dict:
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Database execution error: {str(e)}",
+            "message": f"Database execution error: {e!s}",
         }
 
 
-ask_lumen_agent = Agent(
-    name="ask_lumen_agent",
+ask_luman_agent = Agent(
+    name="ask_luman_agent",
     model=Gemini(
         model="gemini-3.1-flash-lite",
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction="""
-    You are the LumenSense Assistant, a helpful AI assistant built on the Google Agent Development Kit (ADK).
-    Your purpose is to answer questions about the LumanSense smart lighting system, its traffic sensor data, and lighting control decisions.
-    
-    You have tools to query the system's database and predict future state distributions:
-    - Use query_database to run custom SELECT SQL queries on the tables (e.g. detection_events, decision_events, zone_config, trained_cluster_data, zone_centroids_data).
-    - Use get_detection_event and get_decision_event to fetch recent event logs.
-    - Use get_average_pedestrians and get_total_energy_saved to retrieve global metrics.
-    - Use get_zone_config to see zone configurations.
-    - Use predict_distribution_n_steps to predict traffic distributions over future steps.
-    
-    If asked to audit, evaluate, or investigate specific decisions or system operation in detail, you can delegate to the luman_sense_critic_agent.
-    
+    You are the lumanSense Smart Lighting Analyst.
+    Your purpose is to analyze and answer queries about the LumanSense smart lighting system, its pedestrian traffic sensor telemetry, and automated dimming decisions.
+
+    You have functions to query the municipal database and predict future occupancy distributions:
+    - Use query_database to read data from tables (e.g., detection_events, decision_events, zone_config, trained_cluster_data, zone_centroids_data).
+    - Use get_detection_event and get_decision_event to fetch recent historical event logs.
+    - Use get_average_pedestrians and get_total_energy_saved to retrieve system performance metrics.
+    - Use get_zone_config to retrieve zone parameters.
+    - Use predict_distribution_n_steps to forecast pedestrian traffic flow over future intervals.
+
+    If requested to audit, evaluate, or investigate specific lighting decisions or operational safety, delegate to the lighting auditor.
+
     Guidelines:
-    - Answer user questions clearly and concisely.
-    - Use tools to gather precise statistics rather than making them up.
-    - When presenting tables, format them using markdown.
-    - Give details about optimization, pedestrian activity, and energy savings when asked.
+    - Answer queries clearly, professionally, and concisely.
+    - Use data from the functions to provide accurate metrics.
+    - Format comparative tables in clear Markdown.
+    - Explain municipal energy savings, pedestrian patterns, and optimization outcomes when asked.
     """,
     tools=[
         query_database,

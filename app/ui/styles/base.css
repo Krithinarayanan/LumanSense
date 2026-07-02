@@ -1,0 +1,46 @@
+[data-testid="stHeader"] {
+    visibility: hidden;
+}
+
+[data-testid="stToolbar"] {
+    visibility: hidden;
+}
+
+.stApp {
+    background: var(--bg-page);
+}
+
+.block-container {
+    padding: 24px 32px;
+    max-width: 100%;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+
+    margin-bottom: 28px;
+
+    padding-bottom: 18px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+    font-size: 30px;
+    font-weight: 700;
+
+    color: var(--text-primary);
+
+    letter-spacing: -0.03em;
+}
+
+.page-subtitle {
+    font-size: 14px;
+
+    color: var(--text-secondary);
+
+    line-height: 1.5;
+}

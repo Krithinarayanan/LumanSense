@@ -1,7 +1,8 @@
-"""Main entry point for the LumanSense application.
+"""Main entry point for the LumanSense system.
 
-This script initializes the Orchestrator agent and runs the LumanSense control loop,
-simulating real-time inputs using a mock YOLO vision sensor feed.
+This script initializes the environmental coordinator and executes the automated
+dimming control loop, driving real-time municipal street-lighting actuation based on
+simulated pedestrian flow telemetry.
 """
 
 import asyncio
@@ -21,34 +22,33 @@ app = App(  # noqa: F811
 )
 
 
-# --- Execution Setup ---
 async def main():
-    """Starts the YOLO mock producer and runs the Orchestrator runner.
+    """Starts the simulated pedestrian flow telemetry feed and runs the automated control coordinator.
 
-    This function coordinates the background execution of the mock vision feed
-    and the asynchronous execution loop of the root agent.
+    This function coordinates the background simulation of pedestrian traffic and the
+    asynchronous execution loop of the central environmental controller.
 
     Raises:
         KeyboardInterrupt: If the execution is stopped by a user interrupt.
     """
 
-    # 1. Start the yolo mock producer in the background
+    # Start the pedestrian telemetry feed simulation in the background
     background_tasks = set()
     producer_task = asyncio.create_task(yolo_mock_producer())
     background_tasks.add(producer_task)
     producer_task.add_done_callback(background_tasks.discard)
 
-    # 2. Initialize an in-memory session service to track conversation state
+    # Initialize a session service to track state transitions
     session_service = InMemorySessionService()
     await session_service.create_session(
         app_name="app", user_id="user", session_id="s1"
     )
 
-    # 3. Initialize the Runner with your app and session service
+    # Initialize the runner to drive the automated lighting loop
     runner = Runner(app=app, session_service=session_service)
 
-    # 4. Start the agent/app execution
-    print("Starting LumanSense Orchestrator...")
+    # Start the control loop coordinator
+    print("Starting LumanSense Control Loop...")
 
     async for event in runner.run_async(
         user_id="user",
@@ -69,7 +69,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    # Execute the async main function
+    # Execute the control loop
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

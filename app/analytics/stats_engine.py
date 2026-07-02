@@ -1,7 +1,7 @@
-"""Statistics engine module.
+"""Pedestrian traffic analysis and transition forecasting engine.
 
-This module provides pure Python functions for computing traffic transition matrices,
-predicting state distributions over multiple steps, and other statistical helpers.
+This module provides functions to calculate state transition probabilities and
+forecast pedestrian occupancy distributions across lighting zones using historical traffic telemetry.
 """
 
 from app.camera_feed.traffic_pattern import build_probability_matrix
@@ -11,24 +11,24 @@ from app.camera_feed.traffic_pattern import (
 
 
 def build_transition_matrix() -> dict:
-    """Reads the traffic history log file and builds a transition count matrix.
+    """Reads historical pedestrian traffic logs and builds a transition count matrix between lighting zones.
 
     Returns:
         A dictionary containing transition counts in nested and flat formats:
-            - "nested_dict" (dict): Nested state-to-state counts.
-            - "string_keys" (dict): State-to-state string keys and counts.
-            - "tuple_keys" (dict): State-to-state tuple keys and counts.
+            - "nested_dict" (dict): Nested zone-to-zone counts.
+            - "string_keys" (dict): Zone-to-zone string keys and counts.
+            - "tuple_keys" (dict): Zone-to-zone tuple keys and counts.
     """
     return _build_transition_matrix()
 
 
 def get_transition_matrix() -> dict:
-    """Returns the sorted states list and the transition probability matrix.
+    """Calculates zone transition probabilities from the aggregated traffic counts.
 
     Returns:
         A dictionary with:
-            - "states" (list[str]): Sorted state names.
-            - "matrix" (dict): Nested transition probability dictionary.
+            - "states" (list[str]): Sorted lighting zone identifiers.
+            - "matrix" (dict): Nested transition probability dictionary mapping starting zones to target zones.
     """
     counts = build_transition_matrix()
     states, prob_matrix = build_probability_matrix(counts["nested_dict"])
@@ -36,17 +36,17 @@ def get_transition_matrix() -> dict:
 
 
 def get_state_vector(current_state: str, states: list[str]) -> list[float]:
-    """Converts a state name string to a probability vector.
+    """Converts a starting lighting zone identifier to a probability distribution vector.
 
     Args:
-        current_state: The current state name (e.g. "Z1").
-        states: The list of sorted state names.
+        current_state: The starting zone name (e.g., "A").
+        states: The list of sorted known zones.
 
     Returns:
-        A list of floats representing the one-hot state probability vector.
+        A list of floats representing the one-hot starting zone probability vector.
 
     Raises:
-        ValueError: If `current_state` is not in the list of known states.
+        ValueError: If `current_state` is not in the list of known zones.
     """
     n_states = len(states)
     if current_state not in states:
@@ -57,14 +57,14 @@ def get_state_vector(current_state: str, states: list[str]) -> list[float]:
 
 
 def predict_distribution_n_steps(current_state: str, n_steps: int) -> dict[str, float]:
-    """Predicts the state probability distribution after n steps.
+    """Predicts the pedestrian occupancy probability distribution across zones after n transition hops.
 
     Args:
-        current_state: The current state name (e.g. "Z1").
-        n_steps: The number of transition steps to predict.
+        current_state: The current starting zone name (e.g., "A").
+        n_steps: The number of transition intervals to forecast ahead.
 
     Returns:
-        A dictionary mapping each state name to its probability after n steps.
+        A dictionary mapping each zone identifier to its forecasted probability after n transitions.
 
     Raises:
         ValueError: If `n_steps` is negative or current_state is invalid.
@@ -92,21 +92,6 @@ def predict_distribution_n_steps(current_state: str, n_steps: int) -> dict[str, 
         current_vector = next_vector
 
     return {states[k]: current_vector[k] for k in range(n_states)}
-
-
-def predict_distribution(
-    current_state: str, traffic_history_records_path: str | None = None
-) -> dict[str, float]:
-    """Predicts the next state probability distribution (1 step).
-
-    Args:
-        current_state: The current state name (e.g. "Z1").
-        traffic_history_records_path: Optional path to the traffic history log file.
-
-    Returns:
-        A dictionary mapping each state name to its probability in the next step.
-    """
-    return predict_distribution_n_steps(current_state, 1)
 
 
 def get_exponential_moving_averages(x_list: list[float], alpha: float) -> list[float]:

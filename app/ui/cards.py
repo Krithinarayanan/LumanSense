@@ -1,8 +1,9 @@
-def kpi_card(col, icon, label, value, tooltip, accent="blue"):
-    col.markdown(f"""
-    <div title="{tooltip}" class="kpi-card {accent}">
-        <div class="kpi-card-icon">{icon}</div>
-        <div class="kpi-card-label">{label}</div>
-        <div class="kpi-card-value">{value}</div>
-    </div>
-    """, unsafe_allow_html=True)
+def kpi_card(col, icon, label, value, tooltip):
+    col.markdown(
+        f"""
+        <div class="kpi-card">
+        <div class="card-header"><span class="card-icon">{icon}</span> {label}</div>
+        <div class="card-value">{value}</div>
+    """,
+        unsafe_allow_html=True,
+    )

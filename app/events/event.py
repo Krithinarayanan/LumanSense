@@ -1,6 +1,7 @@
-"""Detection event module.
+"""Pedestrian traffic telemetry module.
 
-This module defines the DetectionEvent dataclass representing pedestrian detection from vision sensors.
+This module defines the DetectionEvent representing pedestrian counts and trend events
+captured by municipal street-lighting sensors.
 """
 
 from dataclasses import dataclass
@@ -11,17 +12,22 @@ from .event_types import EventType
 
 @dataclass
 class DetectionEvent:
-    """Dataclass representing a vision sensor pedestrian detection event.
+    """Dataclass representing a street-lighting zone pedestrian detection event.
 
     Attributes:
         eventid: Unique identifier for the event.
-        event_type: The EventType classifying the pedestrian counts.
+        event_type: The EventType classifying the pedestrian activity level.
         pedestrians: Count of pedestrians detected.
         timestamp: The datetime the event was captured.
         ema: Exponential moving average of the pedestrian counts in the zone.
-        trend: Current classified pedestrian trend.
-        delta: The difference between current counts and the EMA.
+        trend: Current classified pedestrian trend (e.g. INCREASING, DECREASING).
+        delta: The difference between current counts and the EMA baseline.
+        flag: Flag indicating if the activity classification state has changed.
         zone: Optional zone name where detection occurred.
+        cluster_label: Classified traffic density category.
+        trend_label: Long-term traffic trend summary.
+        current_occupancy_forecast: Expected pedestrian occupancy for the next interval.
+        delta_occupancy: Expected change in zone occupancy.
     """
 
     eventid: int
@@ -31,10 +37,10 @@ class DetectionEvent:
     ema: float
     trend: str
     delta: float
-    flag:bool
+    flag: bool
     zone: str | None = None
     cluster_label: str = "None"
-    trend_label: str = "@TODO"
+    trend_label: str = "UNKNOWN"
     current_occupancy_forecast: int = 0
     delta_occupancy: float = 0.0
 

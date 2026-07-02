@@ -1,0 +1,55 @@
+/* Chart container */
+.chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.75rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Plotly wrapper */
+.chart-container .js-plotly-plot,
+.chart-container .plot-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Hide unnecessary modebar */
+.chart-container .modebar {
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+.chart-container:hover .modebar {
+    opacity: 0;
+}
+
+/* Plotly modebar styling */
+.chart-container .modebar {
+    background: rgba(20, 25, 35, .85) !important;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.chart-container .modebar-btn svg {
+    fill: var(--text-secondary) !important;
+}
+
+.chart-container .modebar-btn:hover svg {
+    fill: var(--primary) !important;
+}
+
+/* Tooltip */
+.chart-container .hoverlayer .hovertext {
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .45));
+}
+
+/* Legend */
+.chart-container .legend text {
+    fill: var(--text-secondary) !important;
+}
+
+/* Responsive */
+.chart-container {
+    width: 100%;
+}

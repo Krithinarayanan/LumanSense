@@ -1,8 +1,8 @@
 from app.analytics.stats_engine import (
-    predict_distribution_n_steps,
     build_transition_matrix,
-    get_transition_matrix,
     get_exponential_moving_averages,
+    get_transition_matrix,
+    predict_distribution_n_steps,
 )
 
 

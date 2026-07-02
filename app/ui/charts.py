@@ -1,47 +1,87 @@
-import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 
-def render_line_chart(df, x, y, colors, color_by="zone", x_title="Time", y_title=None):
-    """Renders a generic line chart using Plotly Express in Streamlit.
+from app.ui.panel import PanelContainer
 
-    Args:
-        df (pd.DataFrame): Dataframe containing the chart data.
-        x (str): Column name for the X axis.
-        y (str): Column name for the Y axis.
-        colors (dict): Dictionary of parsed CSS color variables.
-        color_by (str, optional): Column name to group/color lines. Defaults to "zone".
-        x_title (str, optional): Title for the X axis. Defaults to "Time".
-        y_title (str, optional): Title for the Y axis. Defaults to None.
-    """
-    if not df.empty:
-        fig_line = px.line(
-            df, x=x, y=y, color=color_by,
-            markers=True, template="plotly_dark",
-            color_discrete_sequence=px.colors.qualitative.Bold,
+
+def render_line_chart(
+    df,
+    x,
+    y,
+    colors,
+    color_by="zone",
+    x_title="Time",
+    y_title=None,
+    width="stretch",
+):
+    fig = px.line(
+        df,
+        x=x,
+        y=y,
+        color=color_by,
+        line_shape="spline",  # smooth lines
+        markers=True,
+        color_discrete_sequence=px.colors.qualitative.Bold,
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor=colors["surface"],
+        height=420,
+        margin={"l": 15, "r": 15, "t": 20, "b": 15},
+        hovermode="x unified",
+        font={
+            "family": "Inter",
+            "size": 13,
+            "color": colors["text_primary"],
+        },
+        legend={"orientation": "h", "y": 1.02, "x": 0, "bgcolor": "rgba(0,0,0,0)"},
+        xaxis={
+            "title": x_title,
+            "showgrid": True,
+            "gridcolor": "rgba(255,255,255,.05)",
+            "showspikes": True,
+            "spikecolor": colors["primary"],
+            "color": colors["text_secondary"],
+        },
+        yaxis={
+            "title": y_title,
+            "showgrid": True,
+            "gridcolor": "rgba(255,255,255,.05)",
+            "color": colors["text_secondary"],
+        },
+        hoverlabel={
+            "bgcolor": "#1B1F2A",
+            "font": {
+                "color": "#F8FAFC",
+                "size": 12,
+                "family": "Inter",
+            },
+            "align": "left",
+        },
+    )
+    with PanelContainer("chart-container"):
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True,
+            },
         )
-        fig_line.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor=colors.get("BG_PLOT", "#1a1d27"),
-            legend_title_text=color_by.capitalize() if color_by else None,
-            margin=dict(l=0, r=0, t=8, b=0),
-            xaxis=dict(
-                gridcolor=colors.get("GRID_COL", "#1e2130"),
-                title=x_title,
-                color=colors.get("TEXT_SEC", "#6b7094"),
-            ),
-            yaxis=dict(
-                gridcolor=colors.get("GRID_COL", "#1e2130"),
-                title=y_title if y_title is not None else y.capitalize(),
-                color=colors.get("TEXT_SEC", "#6b7094"),
-            ),
-            font=dict(color=colors.get("TEXT_SEC", "#6b7094")),
-            height=300,
-        )
-        st.plotly_chart(fig_line, use_container_width=True)
 
-def render_bar_chart(df, x, y, colors, title="", height=260):
-    """Renders a generic bar chart using Plotly Graphical Objects in Streamlit.
+
+def render_bar_chart(
+    df,
+    x,
+    y,
+    colors,
+    title="",
+    width="stretch",
+    bar_color=None,
+    value_suffix="",
+):
+    """Renders a flat bar chart using Plotly in Streamlit.
 
     Args:
         df (pd.DataFrame): Dataframe containing the chart data.
@@ -49,25 +89,106 @@ def render_bar_chart(df, x, y, colors, title="", height=260):
         y (str): Column name for the Y axis.
         colors (dict): Dictionary of parsed CSS color variables.
         title (str, optional): Title of the bar chart. Defaults to "".
-        height (int, optional): Height of the bar chart. Defaults to 260.
+        width (str, optional): Width of the bar chart. Defaults to "stretch".
+        bar_color (str, optional): Flat accent color for bars.
+            Defaults to colors["accent_blue"] or "#5794F2".
+        value_suffix (str, optional): Unit suffix appended to hover/labels,
+            e.g. " W", "%".
     """
-    col_table, col_heat = st.columns([3, 2], gap="large")
-    with col_heat:
-        if not df.empty:
-            fig_bar = go.Figure(go.Bar(
-                x=df[x], y=df[y],
-                marker=dict(color=df[y], colorscale="Blues", showscale=False),
-                text=df[y].round(2),
-                textposition="outside", textfont=dict(color=colors.get("TEXT_VAL", "#c0c4d6"), size=12),
-            ))
-            fig_bar.update_layout(
-                title=dict(text=title,
-                           font=dict(color=colors.get("TEXT_VAL", "#c0c4d6"), size=13), x=0, xanchor="left"),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=colors.get("BG_PLOT", "#1a1d27"),
-                margin=dict(l=0, r=0, t=36, b=0),
-                xaxis=dict(gridcolor=colors.get("GRID_COL", "#1e2130"), title=None, tickfont=dict(color=colors.get("TEXT_SEC", "#6b7094"), size=12)),
-                yaxis=dict(gridcolor=colors.get("GRID_COL", "#1e2130"), title=None, showticklabels=False),
-                font=dict(color=colors.get("TEXT_SEC", "#6b7094")), height=height, bargap=0.3,
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
+    if df.empty:
+        return
 
+    accent = bar_color or colors.get("accent_blue", "#5794F2")
+    grid_color = colors.get("border", "rgba(255,255,255,0.09)")
+    text_primary = colors.get("text_primary", "#c0c4d6")
+    text_secondary = colors.get("text_secondary", "#8e94b0")
+
+    def _fmt(v):
+        """Compact number formatting (K/M abbreviations)."""
+        av = abs(v)
+        if av >= 1_000_000:
+            s = f"{v / 1_000_000:.2f}".rstrip("0").rstrip(".") + "M"
+        elif av >= 1_000:
+            s = f"{v / 1_000:.2f}".rstrip("0").rstrip(".") + "K"
+        else:
+            s = f"{v:.2f}".rstrip("0").rstrip(".") if v % 1 else f"{int(v)}"
+        return s + value_suffix
+
+    labels = df[y].apply(_fmt)
+
+    fig_bar = go.Figure(
+        go.Bar(
+            x=df[x],
+            y=df[y],
+            marker={
+                "color": accent,
+                "line": {"color": accent, "width": 0},
+                "opacity": 0.85,
+            },
+            text=labels,
+            textposition="outside",
+            textfont={"color": text_secondary, "size": 11, "family": "monospace"},
+            hovertemplate=f"%{{y:.2f}}{value_suffix}<extra></extra>",
+            cliponaxis=False,
+        )
+    )
+
+    fig_bar.update_layout(
+        title={
+            "text": f"<span style='letter-spacing:0.3px'>{title}</span>",
+            "font": {
+                "color": text_primary,
+                "size": 13,
+                "family": "Inter, -apple-system, sans-serif",
+            },
+            "x": 0.01,
+            "xanchor": "left",
+            "y": 0.97,
+        },
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin={"l": 10, "r": 10, "t": 40, "b": 40},
+        hovermode="closest",
+        hoverlabel={
+            "bgcolor": colors.get("surface_raised", "#22273a"),
+            "bordercolor": grid_color,
+            "font": {"color": text_primary, "size": 11, "family": "monospace"},
+        },
+        xaxis={
+            "type": "category",
+            "showgrid": False,
+            "zeroline": False,
+            "showline": False,
+            "linecolor": grid_color,
+            "linewidth": 1,
+            "showticklabels": True,
+            "tickfont": {"color": text_secondary, "size": 12, "family": "monospace"},
+            "title": "Zone",
+            "automargin": False,
+            "showspikes": False,
+        },
+        yaxis={
+            "showgrid": True,
+            "gridcolor": grid_color,
+            "gridwidth": 1,
+            "griddash": "dot",
+            "zeroline": False,
+            "showline": False,
+            "tickfont": {"color": text_secondary, "size": 10, "family": "monospace"},
+            "tickformat": ".2s",
+            "title": None,
+            "showspikes": False,
+            "rangemode": "tozero",
+            "range": [0, df[y].max() * 1.2],
+        },
+        font={"color": text_secondary},
+        bargap=0.35,
+        showlegend=False,
+    )
+
+    use_container_width = width == "stretch"
+    st.plotly_chart(
+        fig_bar,
+        use_container_width=use_container_width,
+        config={"displayModeBar": False},
+    )

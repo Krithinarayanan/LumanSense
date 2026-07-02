@@ -1,15 +1,14 @@
-"""Unit test for the ask_lumen_agent."""
+"""Unit test for the ask_luman_agent."""
 
-import pytest
-from app.agent.ask_lumen_agent import ask_lumen_agent, query_database
+from app.agent.ask_luman_agent import ask_luman_agent, query_database
 
 
 def test_agent_initialization():
-    """Verifies that ask_lumen_agent is configured correctly."""
-    assert ask_lumen_agent.name == "ask_lumen_agent"
-    assert len(ask_lumen_agent.tools) > 0
-    assert len(ask_lumen_agent.sub_agents) > 0
-    assert ask_lumen_agent.sub_agents[0].name == "luman_sense_critic_agent"
+    """Verifies that ask_luman_agent is configured correctly."""
+    assert ask_luman_agent.name == "ask_luman_agent"
+    assert len(ask_luman_agent.tools) > 0
+    assert len(ask_luman_agent.sub_agents) > 0
+    assert ask_luman_agent.sub_agents[0].name == "luman_sense_critic_agent"
 
 
 def test_query_database_validation():

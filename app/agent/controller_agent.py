@@ -21,6 +21,7 @@ brightness_plan = {}
 cluster_discovery_map = {}
 centroids = {}
 
+
 def get_decision_reason(event_type: EventType, pedestrians: int) -> str:
     """Returns a user-friendly description of the reasons leading to the decision.
 
@@ -57,7 +58,9 @@ def get_decision_reason(event_type: EventType, pedestrians: int) -> str:
     return "Unknown event"
 
 
-async def _save_detection_record(agent, event, forecast_prob: float, cluster_label: str) -> None:
+async def _save_detection_record(
+    agent, event, forecast_prob: float, cluster_label: str
+) -> None:
     """Saves the pedestrian detection event to the persistent database.
 
     Args:
@@ -81,7 +84,9 @@ async def _save_detection_record(agent, event, forecast_prob: float, cluster_lab
         save_detection_event(event_data)
 
 
-def _compute_brightness_and_decision(event, zone_plan: dict) -> tuple[float, DecisionEvent]:
+def _compute_brightness_and_decision(
+    event, zone_plan: dict
+) -> tuple[float, DecisionEvent]:
     """Calculates actuation brightness and creates a DecisionEvent.
 
     Args:
@@ -228,37 +233,60 @@ async def run_luman_sense_loop(agent, iterations=30):
             print(centroids[zone])
             print("************")
             if hasattr(agent, "call_tool"):
-                cluster_id = await agent.call_tool("k-means-clusterer-mcp", "predict", {"zone": zone, "data": [[event.pedestrians, event.ema]], "centroids": centroids[zone]})
+                cluster_id = await agent.call_tool(
+                    "k-means-clusterer-mcp",
+                    "predict",
+                    {
+                        "zone": zone,
+                        "data": [[event.pedestrians, event.ema]],
+                        "centroids": centroids[zone],
+                    },
+                )
                 if isinstance(cluster_id, list):
                     cluster_id = cluster_id[0]
             else:
                 from app.mcp.k_means_clusterer import predict as _predict
-                cluster_ids = _predict(zone, [[event.pedestrians, event.ema]], centroids[zone])
+
+                cluster_ids = _predict(
+                    zone, [[event.pedestrians, event.ema]], centroids[zone]
+                )
                 cluster_id = cluster_ids[0]
 
             cluster_label = cluster_map[cluster_id]
             print("cluster_label:", cluster_label)
-            traffic_history.append({
-                "cluster_id": cluster_id,
-                "zone": zone,
-                "pedestrians": event.pedestrians,
-                "ema": event.ema
-            })
+            traffic_history.append(
+                {
+                    "cluster_id": cluster_id,
+                    "zone": zone,
+                    "pedestrians": event.pedestrians,
+                    "ema": event.ema,
+                }
+            )
 
             # Save detection details
             await _save_detection_record(agent, event, forecast_prob, cluster_label)
 
             if event.flag:
-                brightness_to_lamp, decision = _compute_brightness_and_decision(event, zone_plan)
+                brightness_to_lamp, decision = _compute_brightness_and_decision(
+                    event, zone_plan
+                )
                 last_decisions[zone] = decision
                 last_brightness_to_lamp[zone] = brightness_to_lamp
-                await _save_decision_record(agent, event, decision, plan_brightness, brightness_to_lamp, cluster_label)
+                await _save_decision_record(
+                    agent,
+                    event,
+                    decision,
+                    plan_brightness,
+                    brightness_to_lamp,
+                    cluster_label,
+                )
             else:
                 decision = last_decisions[zone]
                 brightness_to_lamp = last_brightness_to_lamp[zone]
-                
+
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             print(f"Action Error: {e}")
             decision = DecisionEvent(
@@ -381,22 +409,30 @@ async def discover_brightness_plan(agent=None):
 
     for _zone, plan_details in brightness_plan.items():
         if hasattr(agent, "call_tool"):
-            await agent.call_tool("database-mcp", "save_footfall_predictions",
+            await agent.call_tool(
+                "database-mcp",
+                "save_footfall_predictions",
                 zone=_zone,
                 probability=plan_details["prob dist"],
-                brightness=plan_details["brightness"])
+                brightness=plan_details["brightness"],
+            )
         else:
-            from app.mcp.database_mcp import save_footfall_predictions as _save_footfall_predictions
+            from app.mcp.database_mcp import (
+                save_footfall_predictions as _save_footfall_predictions,
+            )
+
             _save_footfall_predictions(
                 zone=_zone,
                 probability=plan_details["prob dist"],
-                brightness=plan_details["brightness"])
+                brightness=plan_details["brightness"],
+            )
         print(
             f"{plan_details['zone']:<8}{plan_details['prob dist']:<12.2f}{plan_details['brightness']}%"
         )
 
     print("-" * 45)
     print("[STATUS] Predictive lighting schedule established")
+
 
 async def setup_database(agent):
     if hasattr(agent, "call_tool"):
@@ -419,28 +455,25 @@ async def get_traffic_clusters(agent=None):
     global cluster_discovery_map
     global centroids
     if hasattr(agent, "call_tool"):
-        cluster_discovery_map, centroids = await agent.call_tool("k-means-clusterer-mcp", "get_traffic_clusters")
+        cluster_discovery_map, centroids = await agent.call_tool(
+            "k-means-clusterer-mcp", "get_traffic_clusters"
+        )
     else:
-        from app.mcp.k_means_clusterer import get_traffic_clusters as _get_traffic_clusters
+        from app.mcp.k_means_clusterer import (
+            get_traffic_clusters as _get_traffic_clusters,
+        )
+
         cluster_discovery_map, centroids = _get_traffic_clusters()
     return cluster_discovery_map, centroids
+
 
 controller_agent = Agent(
     name="controller_agent",
     model=Gemini(model="gemini-3.1-flash-lite"),
     instruction="""
-    ### Agent Definition:
-    You are the Luman-Sense Controller Agent.
-    You have to initialize database using setup_database tool.
-    Then, you discover the brightness plan using discover_brightness_plan tool at the beginning.
-    You take current state and decide hysteresis-based brightness levels for all zones.
-    You will need to loop through run_luman_sense_loop.
-    You are responsible for listening to events from the vision module and updating
-    brightness levels accordingly.
+    You are the LumanSense Automated Dimming Controller.
+    You initialize the telemetry database, discover the zone-wise predictive brightness plans, and run the real-time sensor processing loop.
+    You process incoming pedestrian detection events from vision sensors and actuate street-lighting brightness levels to optimize energy footprint.
     """,
-    tools=[
-        setup_database,
-        discover_brightness_plan,        
-        run_luman_sense_loop
-    ],
+    tools=[setup_database, discover_brightness_plan, run_luman_sense_loop],
 )

@@ -1,7 +1,7 @@
-"""Brightness planner agent module.
+"""Brightness planner module.
 
-This module defines the LumanSense Brightness Planner Agent, which plans future lamp
-brightness levels using state transition probabilities.
+This module defines the LumanSense Brightness Planner, which plans future street-lighting
+brightness levels using zone transition probabilities.
 """
 
 import os
@@ -35,19 +35,24 @@ if use_vertex:
     )
 
 
-def discover_brightness_plan():
-    """Tool wrapper to plan and print future brightness levels for Zone A."""
-    brightness_plan = plan_brightness_for_steps(current_zone="A", n_steps=3)
+def discover_brightness_plan() -> list[dict[str, Any]]:
+    """Calculates and returns the planned future street-lighting levels for municipal zones.
+
+    Returns:
+        A list of dictionaries containing zone names, forecasted probabilities, and target brightness levels.
+    """
+    return plan_brightness_for_steps(current_zone="A", n_steps=3)
+
 
 def plan_brightness_for_steps(
     current_zone: str,
     n_steps: int,
 ) -> list[dict[str, Any]]:
-    """Predicts the expected brightness for the next n steps based on state transitions.
+    """Predicts the expected lighting brightness for the next n steps based on zone transition probabilities.
 
     Args:
-        current_zone: The current state name (e.g. "Z1").
-        n_steps: Number of future transition steps/paths to plan for.
+        current_zone: The starting zone name (e.g. "A").
+        n_steps: Number of transition hops/intervals to forecast.
 
     Returns:
         A list of dictionaries mapping zone names to their planned parameters
@@ -77,9 +82,10 @@ brightness_planner_agent = Agent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction="""
-    You are the Luman-Sense Brightness Planner Agent.
-    You plan future lamp brightness levels using transition probabilities of traffic states.
-    Use the discover_brightness_plan tool to predict expected brightness.
+    You are the LumanSense Brightness Planner.
+    Your goal is to plan future street-lighting brightness levels across zones.
+    You forecast pedestrian traffic transition probabilities using the discover_brightness_plan function.
+    Optimize lighting levels to balance municipal energy conservation and public safety.
     """,
     tools=[discover_brightness_plan],
 )

@@ -42,9 +42,7 @@ def get_traffic_trends() -> list[dict]:
 
 
 @mcp.tool()
-def update_ema_and_trend(
-    zone: str, pedestrian: int
-) -> tuple[TrendType, float]:
+def update_ema_and_trend(zone: str, pedestrian: int) -> tuple[TrendType, float]:
     """Calculates the Exponential Moving Average (EMA) and husterically classifies the trend.
 
     Args:
@@ -75,7 +73,6 @@ def update_ema_and_trend(
             else TrendType.STABLE
         )
         return (trend, ema)
-
 
 
 if __name__ == "__main__":

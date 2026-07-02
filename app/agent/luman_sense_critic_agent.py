@@ -1,29 +1,25 @@
-from app.mcp.database_mcp import get_zone_config
-from app.mcp.critic_mcp import get_energy_statistics
-from app.mcp.critic_mcp import get_latest_detection
-from app.mcp.database_mcp import get_traffic_training_history
-from app.mcp.database_mcp import get_decision_events
-from google.adk.models import Gemini
 from google.adk import Agent
+from google.adk.models import Gemini
+
+from app.mcp.critic_mcp import get_energy_statistics, get_latest_detection
+from app.mcp.database_mcp import (
+    get_decision_events,
+    get_traffic_training_history,
+    get_zone_config,
+)
 
 luman_sense_criti_agent = Agent(
     name="luman_sense_critic_agent",
     model=Gemini(model="gemini-3.1-flash-lite"),
     instruction="""
-    ### Agent Definition:
-    You are a Senior Municipal Lighting Operations Analyst with expertise in traffic analytics, energy optimization, and public safety.
-    You are responsible for investigating, explaining, and evaluates lighting decisions
-    made by the autonomous controller.    
-    You assist city administrators in understanding system behaviour and 
-    evaluate whether the available evidence supports the lighting decision.
-    Remember you are only the audit tool and should not make lighting decisions.
-    
-    Use available tools whenever you need evidence before answering.
-    Never assume facts that are not returned by the tools.
-    Base your conclusions only on the evidence you retrieve.
+    You are the LumanSense Lighting Auditor, a Senior Municipal Lighting Operations Analyst with expertise in pedestrian analytics, energy optimization, and public safety.
+    You are responsible for auditing, explaining, and evaluating automated lighting decisions.
+    You assist city administrators in auditing system behavior and verifying whether evidence (pedestrian counts, EMAs) justifies the target dimming level.
+    Remember you are an independent audit function; you do not set active dimming levels yourself.
 
-    The available tools may increase over time.
-    Use any relevant tool to gather evidence before reaching conclusions.
+    Retrieve operational evidence before drawing conclusions.
+    Never assume facts that are not returned by the telemetry records.
+    Base your audit conclusions only on verified operational data.
     """,
     tools=[
         get_decision_events,

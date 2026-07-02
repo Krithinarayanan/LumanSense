@@ -1,11 +1,14 @@
 """Analytics package.
 
-This package contains pure Python analytics engines and transition statistics logic.
+This package exposes analytical engines and transition probability logic for forecasting traffic patterns in lighting zones.
 """
 
 from .stats_engine import (
-    predict_distribution_n_steps as predict_distribution_n_steps,
-    predict_distribution as predict_distribution,
     get_exponential_moving_averages as get_exponential_moving_averages,
+)
+from .stats_engine import (
     get_five_point_summary as get_five_point_summary,
+)
+from .stats_engine import (
+    predict_distribution_n_steps as predict_distribution_n_steps,
 )

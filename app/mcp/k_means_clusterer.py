@@ -1,15 +1,16 @@
-"""K-Means clustering service module.
+"""Pedestrian density clustering service.
 
 This module provides a functional implementation of the K-Means clustering
-algorithm using NumPy. It provides fit, train, and predict functions, and exposes
-the main entry points as MCP tools.
+algorithm to categorize pedestrian density zones. It supports clustering of
+footfall telemetry and zone-wise classification of traffic patterns.
 """
 
-from app.mcp.database_mcp import save_cluster_training_history
-import json
 from typing import Any
+
 import numpy as np
 from mcp.server.fastmcp import FastMCP
+
+from app.mcp.database_mcp import save_cluster_training_history
 
 mcp = FastMCP("KMeansClustererMCP")
 
@@ -41,46 +42,48 @@ def cluster_data(
             raise ValueError("Data cannot be empty")
         try:
             data_arr = np.array(data, dtype=float)
-        except Exception:
-            raise ValueError("Data must be a 2D array")
+        except Exception as e:
+            raise ValueError("Data must be a 2D array") from e
     else:
         data_arr = data.astype(float)
-        
+
     if data_arr.size == 0 or len(data_arr) == 0:
         raise ValueError("Data cannot be empty")
-        
+
     if data_arr.ndim != 2:
         raise ValueError("Data must be a 2D array")
-        
+
     if not isinstance(k, int) or k <= 0:
         raise ValueError("k must be greater than 0")
-        
+
     if k > len(data_arr):
         raise ValueError("k cannot be greater than the number of samples")
-        
+
     if not isinstance(max_iters, int) or max_iters <= 0:
         raise ValueError("max_iters must be a positive integer")
-        
+
     if not isinstance(tol, float | int) or tol < 0:
         raise ValueError("tol must be non-negative")
-        
+
     if init not in ("random", "k-means++"):
         raise ValueError("init must be 'random' or 'k-means++'")
-        
+
     if seed is not None:
         np.random.seed(seed)
-        
+
     # Initialization
-    n_samples, n_features = data_arr.shape
+    n_samples, _n_features = data_arr.shape
     if init == "random":
         indices = np.random.choice(n_samples, size=k, replace=False)
         centroids = data_arr[indices].copy()
-    else: # k-means++
+    else:  # k-means++
         centroids = []
         first_idx = np.random.choice(n_samples)
         centroids.append(data_arr[first_idx])
         for _ in range(1, k):
-            distances = np.array([min(np.sum((x - c) ** 2) for c in centroids) for x in data_arr])
+            distances = np.array(
+                [min(np.sum((x - c) ** 2) for c in centroids) for x in data_arr]
+            )
             if np.sum(distances) == 0:
                 probs = np.ones(n_samples) / n_samples
             else:
@@ -88,47 +91,52 @@ def cluster_data(
             next_idx = np.random.choice(n_samples, p=probs)
             centroids.append(data_arr[next_idx])
         centroids = np.array(centroids)
-        
+
     converged = False
     iterations = 0
     labels = np.zeros(n_samples, dtype=int)
-    
+
     for iteration in range(1, max_iters + 1):
         iterations = iteration
         # 1. Assignment
         new_labels = np.zeros(n_samples, dtype=int)
         for i, x in enumerate(data_arr):
             new_labels[i] = np.argmin([np.sum((x - c) ** 2) for c in centroids])
-            
+
         labels = new_labels
-        
+
         # 2. Update centroids
         new_centroids = np.zeros_like(centroids)
         for j in range(k):
-            mask = (labels == j)
+            mask = labels == j
             if np.any(mask):
                 new_centroids[j] = data_arr[mask].mean(axis=0)
             else:
                 # Handle empty cluster: reinitialize with the furthest point
-                dists = np.array([np.sum((data_arr[idx] - centroids[labels[idx]]) ** 2) for idx in range(n_samples)])
+                dists = np.array(
+                    [
+                        np.sum((data_arr[idx] - centroids[labels[idx]]) ** 2)
+                        for idx in range(n_samples)
+                    ]
+                )
                 furthest_idx = np.argmax(dists)
                 new_centroids[j] = data_arr[furthest_idx]
                 labels[furthest_idx] = j
-                
+
         # 3. Check convergence
         shift = np.sqrt(np.sum((new_centroids - centroids) ** 2, axis=1))
         if np.all(shift < tol):
             converged = True
             centroids = new_centroids
             break
-            
+
         centroids = new_centroids
-        
+
     # Calculate inertia
     inertia = 0.0
     for i, x in enumerate(data_arr):
         inertia += np.sum((x - centroids[labels[i]]) ** 2)
-        
+
     return {
         "converged": converged,
         "iterations": iterations,
@@ -138,40 +146,16 @@ def cluster_data(
     }
 
 
-def fit(
-    data: Any,
-    k: int,
-    init: str = "random",
-    max_iters: int = 100,
-    tol: float = 1e-4,
-    seed: int | None = None,
-) -> dict:
-    """Wrapper for cluster_data to fit the model."""
-    return cluster_data(data, k, init, max_iters, tol, seed)
-
-
-def train(
-    data: Any,
-    k: int,
-    init: str = "random",
-    max_iters: int = 100,
-    tol: float = 1e-4,
-    seed: int | None = None,
-) -> dict:
-    """Wrapper for cluster_data to train the model."""
-    return cluster_data(data, k, init, max_iters, tol, seed)
-
-
 @mcp.tool()
-def predict(zone, data: list, centroids: list) -> list[int]:
-    """Predict the closest cluster for each point in data.
+def predict(zone, data: Any, centroids: Any) -> list[int]:
+    """Classifies live pedestrian flow data into the closest traffic density categories.
 
     Args:
-        data: A 2D array or list of lists containing the dataset to predict.
-        centroids: A 2D array or list of lists containing cluster centroids.
+        data: Pedestrian flow readings to classify.
+        centroids: Discovered traffic density cluster centers.
 
     Returns:
-        A list of cluster indices.
+        A list of assigned traffic density cluster indices.
     """
     # validation
     if not isinstance(data, np.ndarray):
@@ -179,36 +163,38 @@ def predict(zone, data: list, centroids: list) -> list[int]:
             raise ValueError("Data cannot be empty")
         try:
             data_arr = np.array(data, dtype=float)
-        except Exception:
-            raise ValueError("Data must be a 2D array")
+        except Exception as e:
+            raise ValueError("Data must be a 2D array") from e
     else:
         data_arr = data.astype(float)
-        
+
     if data_arr.size == 0 or len(data_arr) == 0:
         raise ValueError("Data cannot be empty")
-        
+
     if data_arr.ndim != 2:
         raise ValueError("Data must be a 2D array")
-        
+
     if not isinstance(centroids, np.ndarray):
-        if centroids is None or (isinstance(centroids, list | tuple) and len(centroids) == 0):
+        if centroids is None or (
+            isinstance(centroids, list | tuple) and len(centroids) == 0
+        ):
             raise ValueError("Centroids cannot be empty")
         try:
             centroids_arr = np.array(centroids, dtype=float)
-        except Exception:
-            raise ValueError("Centroids must be a 2D array")
+        except Exception as e:
+            raise ValueError("Centroids must be a 2D array") from e
     else:
         centroids_arr = centroids.astype(float)
-        
+
     if centroids_arr.size == 0 or len(centroids_arr) == 0:
         raise ValueError("Centroids cannot be empty")
-        
+
     if centroids_arr.ndim != 2:
         raise ValueError("Centroids must be a 2D array")
-        
+
     if data_arr.shape[1] != centroids_arr.shape[1]:
         raise ValueError("Feature dimensions of data and centroids must match")
-        
+
     # predict
     labels = []
 
@@ -225,12 +211,13 @@ def predict(zone, data: list, centroids: list) -> list[int]:
 
 @mcp.tool()
 def get_traffic_clusters() -> Any:
-    """Read the training data journeys, group by zone and timestamp, compute EMA, and get zone-wise clusters.
+    """Processes historical pedestrian flow logs to build zone-wise traffic density clusters.
 
     Returns:
-        A tuple of (cluster_discovery_map, centroids).
+        A tuple of (cluster_discovery_map, centroids) representing classified pedestrian flow records and zone-wise density centroids.
     """
     from collections import defaultdict
+
     from app.training_data import journeys
 
     # 1. Group pedestrians count with sum of pedestrians count grouped by zone and timestamp.
@@ -254,11 +241,9 @@ def get_traffic_clusters() -> Any:
     zone_data = defaultdict(list)
     for (ts, zone), count in counts.items():
         scale = ZONE_SCALING_FACTORS.get(zone, 1.0)
-        zone_data[zone].append({
-            "timestamp": ts,
-            "zone": zone,
-            "pedestrians": float(count) * scale
-        })
+        zone_data[zone].append(
+            {"timestamp": ts, "zone": zone, "pedestrians": float(count) * scale}
+        )
 
     # 2. Calculate the EMA with respect to timestamp on pedestrians count per zone.
     alpha = 0.3
@@ -288,46 +273,49 @@ def get_traffic_clusters() -> Any:
     for zone in sorted(zone_data.keys()):
         zone_points = zone_data[zone]
         points = [[item["pedestrians"], item["ema"]] for item in zone_points]
-        
+
         # Determine number of clusters k
         k_zone = min(5, len(points))
         if k_zone == 0:
             cluster_discovery_map[zone] = []
             centroids[zone] = []
             continue
-            
+
         res = cluster_data(points, k=k_zone, seed=42)
-        
+
         centroids_list = res["centroids"]
         # Sort centroids by sum of elements (density metric: pedestrians + ema)
-        sorted_indices = sorted(range(len(centroids_list)), key=lambda idx: sum(centroids_list[idx]))
-        
+        sorted_indices = sorted(
+            range(len(centroids_list)), key=lambda idx: sum(centroids_list[idx])
+        )
+
         # Create a mapping from old arbitrary cluster ID to new sorted cluster ID
-        old_to_new_id = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted_indices)}
-        
+        old_to_new_id = {
+            old_idx: new_idx for new_idx, old_idx in enumerate(sorted_indices)
+        }
+
         # Reorder the centroids to match the new sorted order (0, 1, ..., k-1)
         sorted_centroids = [centroids_list[idx] for idx in sorted_indices]
         centroids[zone] = sorted_centroids
-        
+
         # Map labels in points to their new sorted cluster IDs
         labels = [old_to_new_id[lbl] for lbl in res["labels"]]
         for idx, item in enumerate(zone_points):
             item["cluster_id"] = labels[idx]
             item["cluster_label"] = cluster_map[labels[idx]]
-            
+
         cluster_discovery_map[zone] = zone_points
 
-    #iterate centroids and pretty print - zone, pedestrians, ema, cluster_id, cluster_label, timestamp
+    # iterate centroids and pretty print - zone, pedestrians, ema, cluster_id, cluster_label, timestamp
     for zone in sorted(cluster_discovery_map.keys()):
         print("\n" + "=" * 80)
         print(f"Cluster Centers for Zone {zone}")
         print("=" * 80)
-        
+
         zone_points = cluster_discovery_map[zone]
         for item in zone_points:
             save_cluster_training_history(item)
-            
-    
+
     return cluster_discovery_map, centroids
 
 

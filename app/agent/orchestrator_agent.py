@@ -1,7 +1,7 @@
-"""Orchestrator agent module.
+"""Orchestrator module.
 
-This module defines the LumanSense Orchestrator Agent, which acts as the root agent
-for the application, routing intents and events to specialized sub-agents.
+This module defines the LumanSense Environmental Coordinator, which coordinates
+lighting efficiency and routes events to specialized controller components.
 """
 
 import os
@@ -29,21 +29,22 @@ if use_vertex:
         "GOOGLE_CLOUD_LOCATION", "global"
     )
 
-# Initialize Agent
+# Initialize Environmental Coordinator
 orchestrator_agent = Agent(
     name="orchestrator_agent",
     model=Gemini(model="gemini-3.1-flash-lite"),
     instruction="""
-    You are the LumanSense Orchestrator.
-    Your goal is to manage lighting efficiency by delegating tasks to specialized agents based on the context.
+    You are the LumanSense Environmental Coordinator.
+    Your goal is to maximize lighting efficiency and public safety by delegating operational tasks based on the context.
 
     ### Routing Rules:
-    1. **Real-time Operations:** For all ongoing sensor inputs and hysteresis (flicker prevention) decisions, delegate to `controller_agent`.
-    2. **Constraints:** - Never attempt to perform lighting logic yourself; always delegate.
-       - If you receive ambiguous input, prioritize system stability and consult the `controller_agent`.
+    1. **Real-time Operations:** For all ongoing sensor inputs, pedestrian detections, and flicker-prevention decisions, delegate to the automated dimmer controller.
+    2. **Constraints:**
+       - Never attempt to perform direct actuation logic yourself; always delegate to the controller.
+       - If you receive ambiguous telemetry inputs, prioritize street-lighting stability and consult the automated dimmer controller.
 
     ### Workflow:
-    - Receive event -> Analyze intent -> Route to appropriate agent -> Return agent response to the system.
+    - Receive sensor event -> Analyze activity level -> Coordinate with the appropriate controller component -> Return actuation response.
     """,
     sub_agents=[controller_agent],
 )

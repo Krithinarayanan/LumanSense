@@ -7,9 +7,13 @@ defined in the app/analytics/stats_engine module.
 from mcp.server.fastmcp import FastMCP
 
 from app.analytics.stats_engine import (
-    predict_distribution_n_steps,
     get_exponential_moving_averages as _get_exponential_moving_averages,
+)
+from app.analytics.stats_engine import (
     get_five_point_summary as _get_five_point_summary,
+)
+from app.analytics.stats_engine import (
+    predict_distribution_n_steps,
 )
 
 mcp = FastMCP("Stats")

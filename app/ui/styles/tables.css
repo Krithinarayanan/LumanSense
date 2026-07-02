@@ -1,0 +1,186 @@
+.table-frame-wrapper {
+    max-height: 480px;
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid #2c3235;
+    background-color: #181b1f;
+}
+
+.table-frame {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #181b1f;
+    color: #d8d9da;
+    font-family: 'Inter', 'Roboto', -apple-system, sans-serif;
+    font-size: 13px;
+}
+
+/* Header */
+.table-frame thead {
+    background-color: #212529;
+}
+
+.table-frame thead tr {
+    background-color: #212529;
+}
+
+.table-frame thead tr th {
+    background-color: #212529 !important;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    padding: 10px 12px;
+    border-bottom: 2px solid #3274d9;
+    /* Blue accent */
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    white-space: nowrap;
+    background-clip: padding-box;
+    box-shadow: 0 1px 0 #212529;
+}
+
+.table-frame thead tr th.numeric {
+    text-align: right;
+    font-weight: 700;
+}
+
+.table-frame thead tr th.progress {
+    text-align: left;
+    min-width: 160px;
+    font-weight: 700;
+}
+
+.table-frame thead tr th.text {
+    text-align: left;
+    font-weight: 700;
+}
+
+.table-frame thead tr th:hover {
+    background-color: #2c3235;
+    cursor: pointer;
+}
+
+/* Body cells */
+.table-frame tbody tr td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2c3235;
+    font-size: 13px;
+    white-space: nowrap;
+    color: #d8d9da;
+}
+
+.table-frame tbody tr:nth-child(even) {
+    background-color: #1f2226;
+    position: relative;
+    z-index: 1;
+}
+
+.table-frame tbody tr:nth-child(odd) {
+    background-color: #181b1f;
+    position: relative;
+    z-index: 1;
+}
+
+.table-frame tbody tr:hover {
+    background-color: #2c3235;
+    transition: background-color 0.12s ease-in-out;
+}
+
+/* Numeric columns */
+.table-frame td.numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Roboto Mono', 'Consolas', monospace;
+}
+
+/* Threshold coloring */
+.value-good {
+    color: #56a64b;
+    font-weight: 600;
+}
+
+.value-warn {
+    color: #f2cc0c;
+    font-weight: 600;
+}
+
+.value-crit {
+    color: #e02f44;
+    font-weight: 600;
+}
+
+/* Progress bar cell (Avg Brightness column) */
+.luman-bar-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 160px;
+}
+
+.luman-bar-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background-color: #2c3235;
+    overflow: hidden;
+}
+
+.luman-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #e02f44, #ff5c7c);
+}
+
+.luman-bar-fill {
+    border-radius: 3px;
+    height: 100%;
+    width: calc(var(--pct) * 1%);
+}
+
+.luman-bar-fill-value-good {
+    border-radius: 3px;
+    height: 100%;
+    background: linear-gradient(90deg, #237f2e, #56a64b);
+}
+
+.luman-bar-fill-value-warn {
+    border-radius: 3px;
+    height: 100%;
+    background: linear-gradient(90deg, #b38f00, #f2cc0c);
+}
+
+.luman-bar-fill-value-crit {
+    border-radius: 3px;
+    height: 100%;
+    background: linear-gradient(90deg, #a3202f, #e02f44);
+}
+
+.luman-bar-label {
+    font-family: 'Roboto Mono', 'Consolas', monospace;
+    font-size: 12px;
+    min-width: 42px;
+    text-align: right;
+    color: #d8d9da;
+}
+
+/* Scrollbar */
+.table-frame-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-frame-wrapper::-webkit-scrollbar-track {
+    background: #181b1f;
+}
+
+.table-frame-wrapper::-webkit-scrollbar-thumb {
+    background: #3a3f44;
+    border-radius: 4px;
+}
+
+.table-frame-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #4a4f54;
+}

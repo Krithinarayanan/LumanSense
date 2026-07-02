@@ -1,6 +1,7 @@
-"""Vision MCP service module.
+"""Pedestrian flow classification service.
 
-This module exposes the VisionMCP tool server for classifying and processing pedestrian detection events.
+This module provides operational logic to classify activity states using hysteresis
+rules, and enqueues events from smart lighting sensor feeds.
 """
 
 from mcp.server.fastmcp import FastMCP
@@ -98,7 +99,9 @@ async def _enqueue_event(event: DetectionEvent | None) -> None:
 
 
 @mcp.tool()
-async def process_detection(eventid: int, zone: str, pedestrians: int, timestamp: str) -> dict:
+async def process_detection(
+    eventid: int, zone: str, pedestrians: int, timestamp: str
+) -> dict:
     """Processes a raw vision detection, generating and queueing event if state changes.
 
     Args:

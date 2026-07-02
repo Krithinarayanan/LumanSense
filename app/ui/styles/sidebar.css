@@ -1,0 +1,116 @@
+/* VS Code Activity Bar Sidebar styling */
+section[data-testid="stSidebar"] {
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+    background-color: #13151a !important;
+    border-right: 1px solid #2a2f3a !important;
+    overflow: hidden !important;
+    /* kill sidebar-level scroll */
+}
+
+section[data-testid="stSidebar"][data-collapsed="true"] {
+    margin-left: 0 !important;
+    transform: none !important;
+    left: 0 !important;
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+    display: block !important;
+    visibility: visible !important;
+    transition: none !important;
+    opacity: 1 !important;
+}
+
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+    display: none !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stSidebarNav"] {
+    display: none !important;
+}
+
+/* Kill scroll on every nested sidebar wrapper Streamlit generates */
+section[data-testid="stSidebar"]>div,
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"],
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"],
+section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
+    overflow: hidden !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+    padding: 0 !important;
+    gap: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+.activity-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    width: 68px;
+    background-color: #13151a;
+    padding-top: 8px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.activity-bar a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.activity-icon {
+    width: 46px;
+    height: 32px;
+    /* smaller, was 60px */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-left: 4px solid transparent;
+    font-size: 18px;
+    /* smaller, was 24px */
+    color: #858585;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    flex-shrink: 0;
+}
+
+.activity-icon:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.activity-icon.active {
+    border-left: 4px solid #60a5fa;
+    background: #1e293b;
+    color: #60a5fa !important;
+}
+
+.activity-spacer {
+    flex-grow: 1;
+    width: 100%;
+}
+
+div.block-container {
+    padding-left: 96px !important;
+}
+
+.activity-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+}

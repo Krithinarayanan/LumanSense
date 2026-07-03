@@ -44,3 +44,18 @@
 
     line-height: 1.5;
 }
+
+/* About page README preview container text color override */
+.about-container,
+.about-container p,
+.about-container li,
+.about-container td,
+.about-container th,
+.about-container h1,
+.about-container h2,
+.about-container h3,
+.about-container h4,
+.about-container h5,
+.about-container h6 {
+    color: #FFFFFF !important;
+}

@@ -200,21 +200,7 @@ def render_ai_agent():
                     st.session_state.ai_history.append(
                         {"q": query, "a": response_text, "latency": elapsed}
                     )
-
-                    with PanelContainer("agent-container"):
-                        st.markdown(
-                            f'<div style="color:#F0F0F0; font-size:16px; line-height:1.5;">{response_text}</div>',
-                            unsafe_allow_html=True,
-                        )
-
-                        st.markdown(
-                            f'<div class="latency-tag">⏱ answered in {elapsed:.2f}s</div>',
-                            unsafe_allow_html=True,
-                        )
-
-                    if suggested_query:
-                        st.rerun()
-
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Error communicating with lumanSense: {e}")
 

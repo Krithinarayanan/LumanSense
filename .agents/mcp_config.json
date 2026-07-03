@@ -20,6 +20,48 @@
                 "run",
                 "app/mcp/energy_service.py"
             ]
+        },
+        "database-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/database_mcp.py"
+            ]
+        },
+        "k-means-clusterer-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/k_means_clusterer.py"
+            ]
+        },
+        "critic-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/critic_mcp.py"
+            ]
+        },
+        "linear-regression-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/linear_regression.py"
+            ]
+        },
+        "stats-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/stats_server.py"
+            ]
+        },
+        "trend-analyzer-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/trend_analyzer.py"
+            ]
         }
     }
 }

@@ -5,6 +5,7 @@ brightness adjustments based on detected motion events and hysteresis rules.
 """
 
 from datetime import datetime
+import logging
 
 from google.adk import Agent
 from google.adk.models import Gemini
@@ -20,6 +21,8 @@ from app.events.event_types import EventType
 from app.mcp.database_mcp import save_decision_event, save_detection_event
 from app.mcp.database_mcp import setup_database as _setup_database
 from app.mcp.energy_service import calculate_energy_saved
+
+logger = logging.getLogger("luman_sense")
 
 brightness_plan = {}
 cluster_discovery_map = {}
@@ -232,10 +235,10 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
             forecast_prob = zone_plan["prob dist"]
             plan_brightness = zone_plan["brightness"]
 
-            print("************")
-            print(zone, event.pedestrians, event.ema)
-            print(centroids[zone])
-            print("************")
+            logger.info("************")
+            logger.info("%s %s %s", zone, event.pedestrians, event.ema)
+            logger.info(centroids[zone])
+            logger.info("************")
             if hasattr(agent, "call_tool"):
                 cluster_id = await agent.call_tool(
                     "k-means-clusterer-mcp",
@@ -257,7 +260,7 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
                 cluster_id = cluster_ids[0]
 
             cluster_label = cluster_map[cluster_id]
-            print("cluster_label:", cluster_label)
+            logger.info("cluster_label: %s", cluster_label)
             traffic_history.append(
                 {
                     "cluster_id": cluster_id,
@@ -289,10 +292,7 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
                 brightness_to_lamp = last_brightness_to_lamp[zone]
 
         except Exception as e:
-            import traceback
-
-            traceback.print_exc()
-            print(f"Action Error: {e}")
+            logger.exception("Action Error: %s", e)
             decision = DecisionEvent(
                 eventid=-1,
                 zone="A",
@@ -325,10 +325,10 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
                 event.delta,
             )
 
-    print("[SUMMARY]")
-    print(f"Total energy saved: {sum_energy_saved:.2f} W")
+    logger.info("[SUMMARY]")
+    logger.info("Total energy saved: %.2f W", sum_energy_saved)
     avg_brightness = sum_brightness / count if count > 0 else 0.0
-    print(f"Average brightness: {avg_brightness:.2f}")
+    logger.info("Average brightness: %.2f", avg_brightness)
     await fetch_analytics(agent)
 
 
@@ -356,33 +356,14 @@ def log(
         trend: The classified traffic trend.
         delta: The difference between current pedestrians and EMA.
     """
-    print("\n[INPUT]")
-    print(f" Zone              : {event.zone}")
-    print(f" Pedestrians       : {event.pedestrians}")
-
-    print("\n[ANALYTICS]")
-    print(f" EMA               : {ema:.2f}")
-    print(f" Trend             : {trend}")
-    print(f" Delta             : {delta:.2f}")
-
-    print("\n[PREDICTION]")
-    print(f" Current Zone Forecast : {forecast_prob * 100:.2f}%")
-
-    print("\n[STATE]")
-    print(f" Event Type        : {event.event_type.value}")
-
-    print("\n[REASON]")
-    print(f" {decision.reason}")
-
-    print("\n[CONTROL]")
-    print(f" Predictive Brightness : {plan_brightness}%")
-    print(f" Reactive Brightness   : {decision.brightness}%")
-    print(f" Final Actuation       : {int(brigtness_to_lamp)}%")
-
-    print("\n[ENERGY]")
-    print(f" Estimated Energy Saved : {decision.energy_saved_watts:.2f} W")
-
-    print("=" * 60)
+    logger.info("\n[INPUT]\n Zone              : %s\n Pedestrians       : %s", event.zone, event.pedestrians)
+    logger.info("\n[ANALYTICS]\n EMA               : %.2f\n Trend             : %s\n Delta             : %.2f", ema, trend, delta)
+    logger.info("\n[PREDICTION]\n Current Zone Forecast : %.2f%%", forecast_prob * 100)
+    logger.info("\n[STATE]\n Event Type        : %s", event.event_type.value)
+    logger.info("\n[REASON]\n %s", decision.reason)
+    logger.info("\n[CONTROL]\n Predictive Brightness : %s%%\n Reactive Brightness   : %s%%\n Final Actuation       : %d%%", plan_brightness, decision.brightness, int(brigtness_to_lamp))
+    logger.info("\n[ENERGY]\n Estimated Energy Saved : %.2f W", decision.energy_saved_watts)
+    logger.info("=" * 60)
 
 
 async def discover_brightness_plan(agent: ToolContext = None):
@@ -392,9 +373,9 @@ async def discover_brightness_plan(agent: ToolContext = None):
     over the planning horizon for Zone A, initializing the predictive plan.
     """
     global brightness_plan
-    print("═══════════════════════════════════════════════")
-    print("LUMAN-SENSE EDGE AI INITIALIZATION")
-    print("═══════════════════════════════════════════════")
+    logger.info("═══════════════════════════════════════════════")
+    logger.info("LUMAN-SENSE EDGE AI INITIALIZATION")
+    logger.info("═══════════════════════════════════════════════")
     current_zone = "A"
     n_steps = 3
 
@@ -415,8 +396,8 @@ async def discover_brightness_plan(agent: ToolContext = None):
                 plan_dict = plan.model_dump(by_alias=True)
                 raw_plan_list.append({plan.zone: plan_dict})
         except Exception as e:
-            print(
-                f"[Warning] Failed to run sub-agent: {e}. Falling back to direct function call."
+            logger.warning(
+                "Failed to run sub-agent: %s. Falling back to direct function call.", e
             )
             raw_plan_list = plan_brightness_for_steps(current_zone, n_steps)
     else:
@@ -428,11 +409,11 @@ async def discover_brightness_plan(agent: ToolContext = None):
         for k, v in item.items():
             brightness_plan[k] = v
 
-    print(f"[Markov] Current Zone: {current_zone}, Prediction hops {n_steps}")
-    print("\n[PLANNER] Brightness Plan")
-    print("-" * 45)
-    print(f"{'Zone':<8}{'Forecast':<12}{'Brightness'}")
-    print("-" * 45)
+    logger.info("[Markov] Current Zone: %s, Prediction hops %s", current_zone, n_steps)
+    logger.info("\n[PLANNER] Brightness Plan")
+    logger.info("-" * 45)
+    logger.info("%-8s%-12s%s", "Zone", "Forecast", "Brightness")
+    logger.info("-" * 45)
 
     for _zone, plan_details in brightness_plan.items():
         if hasattr(agent, "call_tool"):
@@ -453,22 +434,22 @@ async def discover_brightness_plan(agent: ToolContext = None):
                 probability=plan_details["prob dist"],
                 brightness=plan_details["brightness"],
             )
-        print(
-            f"{plan_details['zone']:<8}{plan_details['prob dist']:<12.2f}{plan_details['brightness']}%"
+        logger.info(
+            "%-8s%-12.2f%s%%", plan_details['zone'], plan_details['prob dist'], plan_details['brightness']
         )
 
-    print("-" * 45)
-    print("[STATUS] Predictive lighting schedule established")
+    logger.info("-" * 45)
+    logger.info("[STATUS] Predictive lighting schedule established")
 
 
 async def setup_database(agent: ToolContext):
-    print("AGENT TYPE:", type(agent))
-    print("AGENT DIR:", dir(agent))
+    logger.debug("AGENT TYPE: %s", type(agent))
+    logger.debug("AGENT DIR: %s", dir(agent))
     if hasattr(agent, "call_tool"):
         await agent.call_tool("database-mcp", "setup_database")
     else:
         _setup_database()
-    print("[STATUS] Database setup complete")
+    logger.info("[STATUS] Database setup complete")
 
 
 async def fetch_analytics(agent: ToolContext = None):

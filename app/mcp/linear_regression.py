@@ -78,3 +78,8 @@ def simple_linear_regression(x: list[float], y: list[float]) -> dict:
         / n
     )
     return {"slope": slope, "intercept": intercept, "mse": mse}
+
+
+if __name__ == "__main__":
+    mcp.run()
+

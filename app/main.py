@@ -6,6 +6,7 @@ simulated pedestrian flow telemetry.
 """
 
 import asyncio
+import logging
 
 from google.adk.apps import App
 from google.adk.runners import Runner
@@ -15,6 +16,8 @@ from google.genai import types
 import app
 from app.agent.orchestrator_agent import orchestrator_agent
 from app.camera_feed.yolo_mock import yolo_mock_producer
+
+logger = logging.getLogger("luman_sense")
 
 app = App(  # noqa: F811
     root_agent=orchestrator_agent,
@@ -48,7 +51,7 @@ async def main():
     runner = Runner(app=app, session_service=session_service)
 
     # Start the control loop coordinator
-    print("Starting LumanSense Control Loop...")
+    logger.info("Starting LumanSense Control Loop...")
 
     async for event in runner.run_async(
         user_id="user",
@@ -65,12 +68,14 @@ async def main():
         if event.content and event.content.parts:
             text = event.content.parts[0].text
             if text:
-                print(f"[{event.author}]: {text}")
+                logger.info("[%s]: %s", event.author, text)
 
 
 if __name__ == "__main__":
+    from app.logging_config import setup_logging
+    setup_logging()
     # Execute the control loop
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nLumanSense stopped by user.")
+        logger.info("\nLumanSense stopped by user.")

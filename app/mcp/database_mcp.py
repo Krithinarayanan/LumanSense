@@ -1,6 +1,9 @@
 import os
 import sqlite3
+import logging
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger("luman_sense")
 
 # FastMCP is initialized dynamically to separate database access from the RPC layer.
 if TYPE_CHECKING:
@@ -367,7 +370,7 @@ def get_zone_config(zone: str):
 
 
 def fetch_analytics():
-    """Fetches and prints system analytics."""
+    """Fetches and logs system analytics."""
     try:
         total_detections = get_total_detection_events()
         total_decisions = get_total_decision_events()
@@ -377,17 +380,15 @@ def fetch_analytics():
         avg_pedestrians = get_average_pedestrians()
         total_energy = get_total_energy_saved()
 
-        print("\n" + "=" * 40)
-        print("LUMAN-SENSE SYSTEM ANALYTICS")
-        print("=" * 40)
-        print(f"Total Detection Events: {total_detections}")
-        print(f"Total Decision Events:  {total_decisions}")
-        print(f"Most Active Zone:       {active_zone} ({active_zone_count} events)")
-        print(f"Average Pedestrians:    {avg_pedestrians:.2f} per Zone")
-        print(f"Total Energy Saved:     {total_energy:.2f} Watts")
-        print("=" * 40 + "\n")
+        logger.info("\n" + "=" * 40 + "\nLUMAN-SENSE SYSTEM ANALYTICS\n" + "=" * 40)
+        logger.info("Total Detection Events: %s", total_detections)
+        logger.info("Total Decision Events:  %s", total_decisions)
+        logger.info("Most Active Zone:       %s (%s events)", active_zone, active_zone_count)
+        logger.info("Average Pedestrians:    %.2f per Zone", avg_pedestrians)
+        logger.info("Total Energy Saved:     %.2f Watts", total_energy)
+        logger.info("=" * 40 + "\n")
     except Exception as e:
-        print(f"Error fetching analytics: {e}")
+        logger.exception("Error fetching analytics: %s", e)
 
 
 def load_all_data():

@@ -6,9 +6,12 @@ footfall telemetry and zone-wise classification of traffic patterns.
 """
 
 from typing import Any
+import logging
 
 import numpy as np
 from mcp.server.fastmcp import FastMCP
+
+logger = logging.getLogger("luman_sense")
 
 from app.mcp.database_mcp import save_cluster_training_history
 
@@ -202,10 +205,10 @@ def predict(zone, data: Any, centroids: Any) -> list[int]:
         dists = [np.sqrt(np.sum((x - c) ** 2)) for c in centroids_arr]
         labels.append(int(np.argmin(dists)))
 
-    print("zone:", zone)
-    print("pedestrian count input:", data_arr)
-    print("centroid values:", centroids_arr)
-    print("predicted state:", labels)
+    logger.info("zone: %s", zone)
+    logger.info("pedestrian count input: %s", data_arr)
+    logger.info("centroid values: %s", centroids_arr)
+    logger.info("predicted state: %s", labels)
     return labels
 
 
@@ -308,9 +311,9 @@ def get_traffic_clusters() -> Any:
 
     # iterate centroids and pretty print - zone, pedestrians, ema, cluster_id, cluster_label, timestamp
     for zone in sorted(cluster_discovery_map.keys()):
-        print("\n" + "=" * 80)
-        print(f"Cluster Centers for Zone {zone}")
-        print("=" * 80)
+        logger.info("\n" + "=" * 80)
+        logger.info("Cluster Centers for Zone %s", zone)
+        logger.info("=" * 80)
 
         zone_points = cluster_discovery_map[zone]
         for item in zone_points:

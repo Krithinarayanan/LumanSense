@@ -13,6 +13,8 @@ from google.adk.agents import Agent
 from google.adk.models import Gemini
 from google.genai import types
 
+from pydantic import BaseModel, Field
+
 from app.analytics.stats_engine import predict_distribution_n_steps
 
 load_dotenv()
@@ -35,13 +37,41 @@ if use_vertex:
     )
 
 
-def discover_brightness_plan() -> list[dict[str, Any]]:
+class BrightnessPlannerInput(BaseModel):
+    current_zone: str = Field(description="The starting zone name (e.g., 'A')")
+    n_steps: int = Field(description="Number of transition hops/intervals to forecast")
+
+
+class ZonePlan(BaseModel):
+    zone: str = Field(description="The zone name")
+    prob_dist: float = Field(
+        alias="prob dist", description="The probability distribution for this zone"
+    )
+    brightness: int = Field(
+        description="The planned street-lighting brightness level percentage (e.g. 50 or 90)"
+    )
+
+
+class BrightnessPlannerOutput(BaseModel):
+    plans: list[ZonePlan] = Field(
+        description="A list of planned parameters for each zone"
+    )
+
+
+def discover_brightness_plan(
+    current_zone: str = "A",
+    n_steps: int = 3,
+) -> list[dict[str, Any]]:
     """Calculates and returns the planned future street-lighting levels for municipal zones.
+
+    Args:
+        current_zone: The starting zone name (e.g. "A").
+        n_steps: Number of transition hops/intervals to forecast.
 
     Returns:
         A list of dictionaries containing zone names, forecasted probabilities, and target brightness levels.
     """
-    return plan_brightness_for_steps(current_zone="A", n_steps=3)
+    return plan_brightness_for_steps(current_zone=current_zone, n_steps=n_steps)
 
 
 def plan_brightness_for_steps(
@@ -88,6 +118,8 @@ brightness_planner_agent = Agent(
     Optimize lighting levels to balance municipal energy conservation and public safety.
     """,
     tools=[discover_brightness_plan],
+    input_schema=BrightnessPlannerInput,
+    output_schema=BrightnessPlannerOutput,
 )
 
 if __name__ == "__main__":

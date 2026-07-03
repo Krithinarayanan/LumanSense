@@ -8,8 +8,12 @@ from datetime import datetime
 
 from google.adk import Agent
 from google.adk.models import Gemini
+from google.adk.tools import ToolContext
 
-from app.agent.brightness_planner_agent import plan_brightness_for_steps
+from app.agent.brightness_planner_agent import (
+    brightness_planner_agent,
+    plan_brightness_for_steps,
+)
 from app.events.decision_event import DecisionEvent
 from app.events.event_bus import event_queue
 from app.events.event_types import EventType
@@ -171,7 +175,7 @@ async def _apply_lamp_brightness(agent, brightness_to_lamp: float) -> None:
         set_lamp_brightness(percentage=int(brightness_to_lamp))
 
 
-async def run_luman_sense_loop(agent, iterations=30):
+async def run_luman_sense_loop(agent: ToolContext, iterations=30):
     """The background control loop that drives the Luman-Sense system.
 
     Loops through received events, calculates decision brightness values, and
@@ -381,7 +385,7 @@ def log(
     print("=" * 60)
 
 
-async def discover_brightness_plan(agent=None):
+async def discover_brightness_plan(agent: ToolContext = None):
     """Calculates future transition probabilities and updates global brightness_plan.
 
     Uses `plan_brightness_for_steps` to compute the expected brightness levels
@@ -393,7 +397,30 @@ async def discover_brightness_plan(agent=None):
     print("═══════════════════════════════════════════════")
     current_zone = "A"
     n_steps = 3
-    raw_plan_list = plan_brightness_for_steps(current_zone, n_steps)
+
+    # Try calling the sub-agent programmatically if a valid ToolContext is provided
+    # and has the necessary session/invocation details.
+    if agent is not None and hasattr(agent, "session") and agent.session is not None:
+        from google.adk.tools import AgentTool
+
+        try:
+            planner_tool = AgentTool(brightness_planner_agent)
+            result = await planner_tool.run_async(
+                args={"current_zone": current_zone, "n_steps": n_steps},
+                tool_context=agent,
+            )
+            # Reconstruct raw_plan_list from structured result
+            raw_plan_list = []
+            for plan in result.plans:
+                plan_dict = plan.model_dump(by_alias=True)
+                raw_plan_list.append({plan.zone: plan_dict})
+        except Exception as e:
+            print(
+                f"[Warning] Failed to run sub-agent: {e}. Falling back to direct function call."
+            )
+            raw_plan_list = plan_brightness_for_steps(current_zone, n_steps)
+    else:
+        raw_plan_list = plan_brightness_for_steps(current_zone, n_steps)
 
     # Flatten the list of single-key dictionaries to a single flat dictionary
     brightness_plan = {}
@@ -434,7 +461,9 @@ async def discover_brightness_plan(agent=None):
     print("[STATUS] Predictive lighting schedule established")
 
 
-async def setup_database(agent):
+async def setup_database(agent: ToolContext):
+    print("AGENT TYPE:", type(agent))
+    print("AGENT DIR:", dir(agent))
     if hasattr(agent, "call_tool"):
         await agent.call_tool("database-mcp", "setup_database")
     else:
@@ -442,7 +471,7 @@ async def setup_database(agent):
     print("[STATUS] Database setup complete")
 
 
-async def fetch_analytics(agent=None):
+async def fetch_analytics(agent: ToolContext = None):
     if hasattr(agent, "call_tool"):
         await agent.call_tool("database-mcp", "fetch_analytics")
     else:
@@ -451,7 +480,7 @@ async def fetch_analytics(agent=None):
         _fetch_analytics()
 
 
-async def get_traffic_clusters(agent=None):
+async def get_traffic_clusters(agent: ToolContext = None):
     global cluster_discovery_map
     global centroids
     if hasattr(agent, "call_tool"):
@@ -476,4 +505,5 @@ controller_agent = Agent(
     You process incoming pedestrian detection events from vision sensors and actuate street-lighting brightness levels to optimize energy footprint.
     """,
     tools=[setup_database, discover_brightness_plan, run_luman_sense_loop],
+    sub_agents=[brightness_planner_agent],
 )

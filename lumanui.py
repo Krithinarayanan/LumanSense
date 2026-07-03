@@ -12,9 +12,9 @@ from app.ui.typography import configure_page
 # Configure the page first (mandatory for Streamlit)
 configure_page("lumanSense", "💡")
 
+from app.pages.about import render_about  # noqa: E402
 from app.pages.aiagent import render_ai_agent  # noqa: E402
 from app.pages.dashboard import render_dashboard  # noqa: E402
-from app.pages.about import render_about  # noqa: E402
 from app.ui.sidebar import render_sidebar  # noqa: E402
 
 # Apply base and sidebar styling

@@ -31,50 +31,60 @@ LumanSense is built using the **Google ADK (Agent Development Kit)** and a serie
 
 ### System Architecture Block Diagram
 ```mermaid
-graph TD
+graph LR
     classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
     classDef agent fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
     classDef mcp fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff;
     classDef db fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff;
 
-    subgraph Client Interface
-        UI[Streamlit Dashboard / lumanui.py]:::client
-        Sim[Telemetry Producer / app/main.py]:::client
+    subgraph Col1 ["1. Inputs & UI"]
+        UI["Streamlit Dashboard<br>(lumanui.py)"]:::client
+        Sim["Telemetry Producer<br>(app/main.py)"]:::client
     end
 
-    subgraph ADK Agent Ecosystem
-        Orch[Orchestrator Agent]:::agent
-        CtrlAgent[Controller Agent]:::agent
-        Planner[Brightness Planner Agent]:::agent
-        Analyst[Ask Luman Agent]:::agent
-        Auditor[Auditor Agent / Critic]:::agent
+    subgraph Col2 ["2. Edge Vision"]
+        VisionMCP["Vision MCP<br>(vision_service.py)"]:::mcp
     end
 
-    subgraph MCP Service Servers
-        VisionMCP[Vision MCP]:::mcp
-        DBMCP[Database MCP]:::mcp
-        ActuatorMCP[Controller MCP]:::mcp
-        EnergyMCP[Energy MCP]:::mcp
-        KMeansMCP[K-Means Clusterer MCP]:::mcp
+    subgraph Col3 ["3. ADK Agent Ecosystem"]
+        Orch["Orchestrator Agent"]:::agent
+        CtrlAgent["Controller Agent"]:::agent
+        Planner["Brightness Planner"]:::agent
+        Analyst["Ask Luman Agent"]:::agent
+        Auditor["Auditor Agent (Critic)"]:::agent
     end
 
-    subgraph Data Storage
-        SQLite[(luman_sense.db)]:::db
+    subgraph Col4 ["4. MCP Infrastructure"]
+        DBMCP["Database MCP<br>(database_mcp.py)"]:::mcp
+        ActuatorMCP["Controller MCP<br>(controller_service.py)"]:::mcp
+        EnergyMCP["Energy MCP<br>(energy_service.py)"]:::mcp
+        KMeansMCP["K-Means Clusterer<br>(k_means_clusterer.py)"]:::mcp
     end
 
-    Sim -->|Process Raw Frames| VisionMCP
-    VisionMCP -->|Event Queue| CtrlAgent
-    Orch -->|Delegates Real-Time Control| CtrlAgent
+    subgraph Col5 ["5. Storage"]
+        SQLite[("SQLite Database<br>(luman_sense.db)")]:::db
+    end
+
+    %% Real-time control loop flow
+    Sim -->|Process Frames| VisionMCP
+    VisionMCP -->|Enqueue DetectionEvent| CtrlAgent
+    Orch -->|Delegate Control| CtrlAgent
     CtrlAgent -->|Retrieve Predictions| Planner
-    CtrlAgent -->|Classify Density State| KMeansMCP
-    CtrlAgent -->|Save Events| DBMCP
+
+    %% Controller actions
+    CtrlAgent -->|Classify Density| KMeansMCP
     CtrlAgent -->|Actuate Dimming| ActuatorMCP
     CtrlAgent -->|Calculate Savings| EnergyMCP
-    UI -->|Interactive Analytics| Analyst
-    Analyst -->|Audit Decisions| Auditor
-    Analyst -->|Query Metrics| DBMCP
+    CtrlAgent -->|Save Telemetry| DBMCP
+
+    %% Operator / Analyst flow
+    UI -->|Interactive Query| Analyst
+    Analyst -->|Request Audit| Auditor
+    Analyst -->|Query History| DBMCP
+    Auditor -->|Validate Decisions| DBMCP
+
+    %% Persistence
     DBMCP --> SQLite
-    Auditor --> DBMCP
 ```
 
 ### ADK Agents

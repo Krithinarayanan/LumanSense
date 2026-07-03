@@ -4,8 +4,8 @@ This module defines the LumanSense Controller Agent, which manages real-time lig
 brightness adjustments based on detected motion events and hysteresis rules.
 """
 
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from google.adk import Agent
 from google.adk.models import Gemini
@@ -356,13 +356,29 @@ def log(
         trend: The classified traffic trend.
         delta: The difference between current pedestrians and EMA.
     """
-    logger.info("\n[INPUT]\n Zone              : %s\n Pedestrians       : %s", event.zone, event.pedestrians)
-    logger.info("\n[ANALYTICS]\n EMA               : %.2f\n Trend             : %s\n Delta             : %.2f", ema, trend, delta)
+    logger.info(
+        "\n[INPUT]\n Zone              : %s\n Pedestrians       : %s",
+        event.zone,
+        event.pedestrians,
+    )
+    logger.info(
+        "\n[ANALYTICS]\n EMA               : %.2f\n Trend             : %s\n Delta             : %.2f",
+        ema,
+        trend,
+        delta,
+    )
     logger.info("\n[PREDICTION]\n Current Zone Forecast : %.2f%%", forecast_prob * 100)
     logger.info("\n[STATE]\n Event Type        : %s", event.event_type.value)
     logger.info("\n[REASON]\n %s", decision.reason)
-    logger.info("\n[CONTROL]\n Predictive Brightness : %s%%\n Reactive Brightness   : %s%%\n Final Actuation       : %d%%", plan_brightness, decision.brightness, int(brigtness_to_lamp))
-    logger.info("\n[ENERGY]\n Estimated Energy Saved : %.2f W", decision.energy_saved_watts)
+    logger.info(
+        "\n[CONTROL]\n Predictive Brightness : %s%%\n Reactive Brightness   : %s%%\n Final Actuation       : %d%%",
+        plan_brightness,
+        decision.brightness,
+        int(brigtness_to_lamp),
+    )
+    logger.info(
+        "\n[ENERGY]\n Estimated Energy Saved : %.2f W", decision.energy_saved_watts
+    )
     logger.info("=" * 60)
 
 
@@ -435,7 +451,10 @@ async def discover_brightness_plan(agent: ToolContext = None):
                 brightness=plan_details["brightness"],
             )
         logger.info(
-            "%-8s%-12.2f%s%%", plan_details['zone'], plan_details['prob dist'], plan_details['brightness']
+            "%-8s%-12.2f%s%%",
+            plan_details["zone"],
+            plan_details["prob dist"],
+            plan_details["brightness"],
         )
 
     logger.info("-" * 45)

@@ -6,6 +6,7 @@ console stream handlers, and file redirection handlers.
 
 import logging
 
+
 def setup_logging(log_file: str = "luman_sense.log") -> None:
     """Sets up the global logging configuration to output to console and a file.
 

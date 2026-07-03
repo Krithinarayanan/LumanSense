@@ -2,7 +2,6 @@ import os
 import sys
 
 from app.ui import theme, typography
-from app.ui.panel import PanelContainer
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_root not in sys.path:
@@ -89,9 +88,7 @@ def render_ai_agent():
     agent_online = st.session_state.runner is not None
 
     # ── Header row: title + live status badge ───────────────────────────────────────
-    typography.render_page_header(
-        "Ask LumanSense", "Smart Lighting Assistant"
-    )
+    typography.render_page_header("Ask LumanSense", "Smart Lighting Assistant")
 
     _header_col, status_col = st.columns([4, 1])
     with status_col:

@@ -5,15 +5,15 @@ algorithm to categorize pedestrian density zones. It supports clustering of
 footfall telemetry and zone-wise classification of traffic patterns.
 """
 
-from typing import Any
 import logging
+from typing import Any
 
 import numpy as np
 from mcp.server.fastmcp import FastMCP
 
-logger = logging.getLogger("luman_sense")
-
 from app.mcp.database_mcp import save_cluster_training_history
+
+logger = logging.getLogger("luman_sense")
 
 mcp = FastMCP("KMeansClustererMCP")
 

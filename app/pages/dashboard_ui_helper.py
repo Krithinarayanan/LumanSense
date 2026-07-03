@@ -27,6 +27,7 @@ ENERGY_ICON = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
   <line x1="23" y1="11" x2="23" y2="13"></line>
 </svg>"""
 
+
 def build_dashboard_cards(kpis):
     lightning_optimization = (
         100
@@ -70,4 +71,3 @@ def build_dashboard_cards(kpis):
             f"{kpis['total_saved']:.2f} W",
             "Cumulative energy saved (watts) from all dimming decisions",
         )
-

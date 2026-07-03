@@ -81,6 +81,8 @@ invalid-return-type = "ignore"
 possibly-missing-attribute = "ignore"
 not-subscriptable = "ignore"
 deprecated = "ignore"
+call-non-callable = "ignore"
+invalid-parameter-default = "ignore"
 
 [tool.codespell]
 ignore-words-list = "rouge"

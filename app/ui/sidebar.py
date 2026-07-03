@@ -1,8 +1,11 @@
 import streamlit as st
 
+
 def render_sidebar():
     with st.sidebar:
-        dashboard_active = "active" if st.session_state.active_page == "dashboard" else ""
+        dashboard_active = (
+            "active" if st.session_state.active_page == "dashboard" else ""
+        )
         ai_active = "active" if st.session_state.active_page == "aiagent" else ""
         about_active = "active" if st.session_state.active_page == "about" else ""
         st.html(f"""
@@ -19,8 +22,8 @@ def render_sidebar():
                 </a>
                 <a href="?page=about">
                     <div class="activity-icon {about_active}">
-                        ℹ️
+                        &#8505;&#65039;
                     </div>
-                </a>                
+                </a>
             </div>
             """)

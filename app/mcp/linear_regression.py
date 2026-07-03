@@ -82,4 +82,3 @@ def simple_linear_regression(x: list[float], y: list[float]) -> dict:
 
 if __name__ == "__main__":
     mcp.run()
-

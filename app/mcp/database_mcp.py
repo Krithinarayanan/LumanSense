@@ -1,6 +1,6 @@
+import logging
 import os
 import sqlite3
-import logging
 from typing import TYPE_CHECKING
 
 logger = logging.getLogger("luman_sense")
@@ -383,7 +383,9 @@ def fetch_analytics():
         logger.info("\n" + "=" * 40 + "\nLUMAN-SENSE SYSTEM ANALYTICS\n" + "=" * 40)
         logger.info("Total Detection Events: %s", total_detections)
         logger.info("Total Decision Events:  %s", total_decisions)
-        logger.info("Most Active Zone:       %s (%s events)", active_zone, active_zone_count)
+        logger.info(
+            "Most Active Zone:       %s (%s events)", active_zone, active_zone_count
+        )
         logger.info("Average Pedestrians:    %.2f per Zone", avg_pedestrians)
         logger.info("Total Energy Saved:     %.2f Watts", total_energy)
         logger.info("=" * 40 + "\n")

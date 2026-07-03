@@ -4,7 +4,9 @@ This module renders the system documentation and overview by loading the README.
 """
 
 import os
+
 import streamlit as st
+
 from app.ui import theme, typography
 
 
@@ -19,7 +21,7 @@ def render_about():
     readme_path = os.path.join(project_root, "README.md")
 
     try:
-        with open(readme_path, "r", encoding="utf-8") as f:
+        with open(readme_path, encoding="utf-8") as f:
             readme_content = f.read()
         # Wrap content in a styled container defined in base.css
         st.markdown(

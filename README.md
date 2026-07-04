@@ -19,7 +19,10 @@ LumanSense addresses these issues through **predictive and reactive street-light
 * **Reactive Actuation**: Dims or brightens streetlights in real-time based on current pedestrian detections classified using hysteresis filters (e.g., normal activity, spikes, clearing, low activity).
 * **Predictive Planning**: Leverages a Markov Chain model to forecast pedestrian transition probabilities across zones (e.g., if a pedestrian enters Zone A, they are likely to transition to Zone B in future steps) and establishes a proactive brightness schedule.
 * **Intelligent Actuation Blending**: Combines predictive forecasts and real-time reactive signals to compute the optimal brightness percentage:
-  $$\text{Brightness}_{\text{lamp}} = (\text{Forecast}_{\text{prob}} \times \text{Brightness}_{\text{plan}}) + ((1 - \text{Forecast}_{\text{prob}}) \times \text{Brightness}_{\text{reactive}})$$
+
+$$
+\text{Brightness}_{\text{lamp}} = (\text{Forecast}_{\text{prob}} \times \text{Brightness}_{\text{plan}}) + ((1 - \text{Forecast}_{\text{prob}}) \times \text{Brightness}_{\text{reactive}})
+$$
 * **Traffic Density Clustering**: Employs K-Means clustering (`k-means-clusterer-mcp`) to classify traffic densities (`LOW_TRAFFIC`, `PEAK_TRAFFIC`, `TRAFFIC_SURGE`, etc.) by comparing current footfalls against exponential moving averages (EMA).
 * **AI-Assisted Operations**: Features an interactive Natural Language chat assistant enabling municipal operators to check metrics, forecast distributions, and audit decisions.
 

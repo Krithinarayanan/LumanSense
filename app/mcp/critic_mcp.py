@@ -4,6 +4,7 @@ This module exposes operational data and telemetry records for auditing lighting
 """
 
 from app.mcp.database_mcp import (
+    get_connection,
     get_decision_events_by_zone,
     get_detection_events_by_zone,
     get_zone_config,
@@ -46,8 +47,66 @@ def get_traffic_training_history(zone: str):
 
 
 def get_energy_statistics(zone: str):
-    """Computes total energy footprint metrics for a zone (to be implemented)."""
-    return {}
+    """Computes total energy footprint metrics for a zone.
+
+    Args:
+        zone: The zone identifier (e.g., 'A', 'B', 'C', 'D').
+
+    Returns:
+        A dictionary containing total energy saved, average brightness,
+        number of decisions, and comparison details.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT 
+                SUM(energy_saved_watts) as total_saved,
+                AVG(brightness) as avg_brightness,
+                COUNT(id) as count_decisions,
+                AVG(energy_saved_watts) as avg_saved,
+                MAX(energy_saved_watts) as max_saved,
+                AVG(pred_brightness) as avg_pred_brightness,
+                AVG(reactive_brightness) as avg_reactive_brightness
+            FROM decision_events
+            WHERE zone = ?
+            """,
+            (zone,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row or row[2] == 0:
+            return {
+                "zone": zone,
+                "total_energy_saved_watts": 0,
+                "average_brightness_percent": 0.0,
+                "total_decisions": 0,
+                "average_energy_saved_watts": 0.0,
+                "max_energy_saved_watts": 0,
+                "average_pred_brightness": 0.0,
+                "average_reactive_brightness": 0.0,
+            }
+
+        return {
+            "zone": zone,
+            "total_energy_saved_watts": int(row[0]) if row[0] is not None else 0,
+            "average_brightness_percent": round(float(row[1]), 2) if row[1] is not None else 0.0,
+            "total_decisions": int(row[2]),
+            "average_energy_saved_watts": round(float(row[3]), 2) if row[3] is not None else 0.0,
+            "max_energy_saved_watts": int(row[4]) if row[4] is not None else 0,
+            "average_pred_brightness": round(float(row[5]), 2) if row[5] is not None else 0.0,
+            "average_reactive_brightness": round(float(row[6]), 2) if row[6] is not None else 0.0,
+        }
+    except Exception as e:
+        return {
+            "zone": zone,
+            "error": str(e),
+            "total_energy_saved_watts": 0,
+            "average_brightness_percent": 0.0,
+            "total_decisions": 0,
+        }
 
 
 # Launch the audit service

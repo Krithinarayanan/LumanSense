@@ -1,14 +1,14 @@
 """Traffic pattern utilities module.
 
 This module provides tools for building transition matrices, probability distributions,
-and printing matrix tables from historical pedestrian journeys.
+and printing matrix tables from historical traffic data.
 """
 
-from app.training_data import journeys
+from app.data_parser import parse_traffic_data
 
 
 def build_transition_matrix() -> dict:
-    """Builds a transition count matrix from historical journey paths.
+    """Builds a transition count matrix from historical traffic data.
 
     Returns:
         A dict containing transition counts in nested and flat formats:
@@ -16,16 +16,32 @@ def build_transition_matrix() -> dict:
             - "string_keys" (dict): Dict with string keys "from_zone -> to_zone" and counts.
             - "nested_dict" (dict): Nested dictionary with from_zone keys containing to_zone counts.
     """
-    transitions = {}
-    for journey in journeys:
-        path = journey.get("path", [])
+    from collections import defaultdict
 
-        for i in range(len(path) - 1):
-            from_zone = path[i]["zone"]
-            to_zone = path[i + 1]["zone"]
+    records = parse_traffic_data()
 
-            transition = (from_zone, to_zone)
-            transitions[transition] = transitions.get(transition, 0) + 1
+    # To calculate transitions, we group by datetime to get counts for all zones at each hour
+    by_datetime = defaultdict(dict)
+    for r in records:
+        by_datetime[r["datetime"]][r["zone"]] = r["vehicles"]
+
+    # Sort datetimes chronologically
+    sorted_dts = sorted(by_datetime.keys())
+
+    zones = ["A", "B", "C", "D"]
+    transitions = {(z_from, z_to): 0 for z_from in zones for z_to in zones}
+
+    # Iterate through consecutive hours and calculate transition counts
+    for t in range(len(sorted_dts) - 1):
+        t_curr = by_datetime[sorted_dts[t]]
+        t_next = by_datetime[sorted_dts[t + 1]]
+
+        for z_from in zones:
+            val_from = t_curr.get(z_from, 0)
+            if val_from > 0:
+                for z_to in zones:
+                    val_to = t_next.get(z_to, 0)
+                    transitions[(z_from, z_to)] += min(val_from, val_to)
 
     # Format transition changes dict in multiple common formats for clarity
     nested_transitions = {}

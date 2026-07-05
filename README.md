@@ -91,18 +91,18 @@ graph LR
 ```
 
 ### ADK Agents
-1. **Orchestrator Agent** ([orchestrator_agent.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/agent/orchestrator_agent.py)): Acts as the Environmental Coordinator. Routes real-time telemetry inputs to the dimming controller.
-2. **Controller Agent** ([controller_agent.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/agent/controller_agent.py)): The core loop coordinator. Processes queued detection events, queries plans, makes dimming decisions, and actuates physical brightness levels.
-3. **Brightness Planner Agent** ([brightness_planner_agent.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/agent/brightness_planner_agent.py)): Computes multi-step ahead transition probability forecasts across zones using historical matrices.
-4. **Ask Luman Agent** ([ask_luman_agent.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/agent/ask_luman_agent.py)): Enables natural language querying of database records, state distributions, and overall energy savings.
-5. **Lighting Auditor Agent** ([luman_sense_critic_agent.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/agent/luman_sense_critic_agent.py)): A critique agent that audits recent lighting dimming actions to verify if safety standards were maintained.
+1. **Orchestrator Agent** ([orchestrator_agent.py](app/agent/orchestrator_agent.py)): Acts as the Environmental Coordinator. Routes real-time telemetry inputs to the dimming controller.
+2. **Controller Agent** ([controller_agent.py](app/agent/controller_agent.py)): The core loop coordinator. Processes queued detection events, queries plans, makes dimming decisions, and actuates physical brightness levels.
+3. **Brightness Planner Agent** ([brightness_planner_agent.py](app/agent/brightness_planner_agent.py)): Computes multi-step ahead transition probability forecasts across zones using historical matrices.
+4. **Ask Luman Agent** ([ask_luman_agent.py](app/agent/ask_luman_agent.py)): Enables natural language querying of database records, state distributions, and overall energy savings.
+5. **Lighting Auditor Agent** ([luman_sense_critic_agent.py](app/agent/luman_sense_critic_agent.py)): A critique agent that audits recent lighting dimming actions to verify if safety standards were maintained.
 
 ### MCP Tools & Services
-* **VisionMCP** ([vision_service.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/mcp/vision_service.py)): Classifies raw video frames (pedestrian count, timestamp, zone) into discrete activity states using hysteresis filters.
-* **DatabaseMCP** ([database_mcp.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/mcp/database_mcp.py)): Manages the SQLite database operations (`luman_sense.db`).
-* **ControllerMCP** ([controller_service.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/mcp/controller_service.py)): Mock hardware interface for adjusting lamp brightness.
-* **EnergyMCP** ([energy_service.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/mcp/energy_service.py)): Computes estimated energy savings relative to a baseline brightness level (defaults to 90%).
-* **K-Means Clusterer MCP** ([k_means_clusterer.py](file:///home/krithi/Downloads/Antigravity/AGY-PROJECTS/luman-sense/app/mcp/k_means_clusterer.py)): Clusters pedestrian-EMA feature vectors to identify specific traffic congestion patterns.
+* **VisionMCP** ([vision_service.py](app/mcp/vision_service.py)): Classifies raw video frames (pedestrian count, timestamp, zone) into discrete activity states using hysteresis filters.
+* **DatabaseMCP** ([database_mcp.py](app/mcp/database_mcp.py)): Manages the SQLite database operations (`luman_sense.db`).
+* **ControllerMCP** ([controller_service.py](app/mcp/controller_service.py)): Mock hardware interface for adjusting lamp brightness.
+* **EnergyMCP** ([energy_service.py](app/mcp/energy_service.py)): Computes estimated energy savings relative to a baseline brightness level (defaults to 90%).
+* **K-Means Clusterer MCP** ([k_means_clusterer.py](app/mcp/k_means_clusterer.py)): Clusters pedestrian-EMA feature vectors to identify specific traffic congestion patterns.
 
 ---
 
@@ -131,6 +131,19 @@ Tracks dimming actuations and performance details:
 * `brightness` (INTEGER) (Final Actuation)
 * `energy_saved_watts` (INTEGER)
 * `reason` (TEXT)
+
+---
+
+## 📊 Training Data
+
+The predictive Markov models and K-Means traffic clustering algorithms in LumanSense are trained using a historical traffic dataset.
+* **File Location**: [traffic.csv](app/training-dataset/traffic.csv)
+* **Data Mapping**: The dataset details vehicle counts collected at hourly intervals across multiple junctions:
+  * Junction 1 -> **Zone A**
+  * Junction 2 -> **Zone B**
+  * Junction 3 -> **Zone C**
+  * Junction 4 -> **Zone D**
+* **Usage**: Used to compute hourly state transition probabilities and configure the five-cluster centroids (`LOW_TRAFFIC`, `CLEARING_TRAFFIC`, `MODERATE_TRAFFIC`, `TRAFFIC_SURGE`, `PEAK_TRAFFIC`) based on raw count and EMA baseline features.
 
 ---
 
@@ -203,3 +216,10 @@ Launch the local `agents-cli` interactive developer playground to test agent rou
 ```bash
 agents-cli playground
 ```
+
+---
+
+## 📚 Citations & Data Sources
+
+This project uses the following datasets for training and simulation logic:
+* **Traffic Prediction Dataset**: fedesoriano. (2021). *Traffic Prediction Dataset*. Kaggle. Available at: [https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset](https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset)

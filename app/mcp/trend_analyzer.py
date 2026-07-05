@@ -8,7 +8,7 @@ from collections import defaultdict
 from mcp.server.fastmcp import FastMCP
 
 from app.events.trend_types import TrendType
-from app.training_data import journeys
+from app.data_parser import parse_traffic_data
 
 mcp = FastMCP("TrendAnalyzer")
 
@@ -17,7 +17,7 @@ zone_wise_ema = {}
 
 @mcp.tool()
 def get_traffic_trends() -> list[dict]:
-    """Aggregates training journey paths by timestamp and zone, returning traffic counts.
+    """Aggregates training traffic data by timestamp and zone, returning traffic counts.
 
     Returns:
         A list of dictionaries containing:
@@ -25,18 +25,17 @@ def get_traffic_trends() -> list[dict]:
             - "zone" (str): Lighting zone label.
             - "count" (int): Count of pedestrian transitions.
     """
-    counts = defaultdict(int)
-    for journey in journeys:
-        path = journey.get("path", [])
-        for step in path:
-            ts = step.get("timestamp")
-            zone = step.get("zone")
-            if ts and zone:
-                counts[(ts, zone)] += 1
+    records = parse_traffic_data()
+
+    # Group by (timestamp, zone) and average the vehicles
+    grouped = defaultdict(list)
+    for r in records:
+        grouped[(r["timestamp"], r["zone"])].append(r["vehicles"])
 
     result = []
-    for (ts, zone), count in counts.items():
-        result.append({"timestamp": ts, "zone": zone, "count": count})
+    for (ts, zone), vals in grouped.items():
+        avg_count = int(round(sum(vals) / len(vals)))
+        result.append({"timestamp": ts, "zone": zone, "count": avg_count})
     result.sort(key=lambda x: (x["timestamp"], x["zone"]))
     return result
 

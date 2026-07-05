@@ -13,8 +13,7 @@ def test_get_traffic_trends():
         assert "count" in entry
         assert isinstance(entry["count"], int)
 
-    # Spot check specific values from training_data.py
-    # e.g., P001 and P002 both start at 08:00 in zone A
+    # Spot check specific values from the traffic dataset
     # Let's find the entry for 08:00, zone A
     entry_0800_A = next(
         (e for e in trends if e["timestamp"] == "08:00" and e["zone"] == "A"), None

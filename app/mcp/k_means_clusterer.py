@@ -221,17 +221,7 @@ def get_traffic_clusters() -> Any:
     """
     from collections import defaultdict
 
-    from app.training_data import journeys
-
-    # 1. Group pedestrians count with sum of pedestrians count grouped by zone and timestamp.
-    counts = defaultdict(int)
-    for journey in journeys:
-        path = journey.get("path", [])
-        for step in path:
-            ts = step.get("timestamp")
-            zone = step.get("zone")
-            if ts and zone:
-                counts[(ts, zone)] += 1
+    from app.data_parser import parse_traffic_data
 
     # Group counts by zone and scale to align with real-time counts
     ZONE_SCALING_FACTORS = {
@@ -240,6 +230,19 @@ def get_traffic_clusters() -> Any:
         "C": 2.0,
         "D": 10.33,
     }
+
+    records = parse_traffic_data()
+
+    # Group by (timestamp, zone) and average the vehicles
+    grouped = defaultdict(list)
+    for r in records:
+        grouped[(r["timestamp"], r["zone"])].append(r["vehicles"])
+
+    counts = {}
+    for (ts, zone), vals in grouped.items():
+        avg_vehicles = sum(vals) / len(vals)
+        scale = ZONE_SCALING_FACTORS.get(zone, 1.0)
+        counts[(ts, zone)] = avg_vehicles / scale
 
     zone_data = defaultdict(list)
     for (ts, zone), count in counts.items():

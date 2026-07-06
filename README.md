@@ -1,5 +1,4 @@
-# LumanSense 💡
-
+# LumanSense
 LumanSense is an adaptive municipal street-lighting control system. It utilizes Edge AI, Multi-Agent Coordination, and Model Context Protocol (MCP) services to optimize the urban energy footprint while prioritizing public safety. By analyzing real-time pedestrian flow telemetry, the system dynamically dims or brightens streetlights.
 
 ---

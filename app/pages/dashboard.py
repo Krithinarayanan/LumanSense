@@ -58,7 +58,7 @@ decision_table_column_config = {
 
 def render_dashboard():
     typography.configure_page(
-        "lumanSense", "💡", "Real-time lighting intelligence overview"
+        "lumanSense", "app/ui/assets/favicon_small.png", "Real-time lighting intelligence overview"
     )
 
     theme.apply_theme("base.css", "dashboard.css", "tables.css")

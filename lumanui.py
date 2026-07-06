@@ -10,7 +10,7 @@ from app.ui import theme
 from app.ui.typography import configure_page
 
 # Configure the page first (mandatory for Streamlit)
-configure_page("lumanSense", "💡")
+configure_page("lumanSense", "app/ui/assets/favicon_small.png")
 
 from app.pages.about import render_about  # noqa: E402
 from app.pages.aiagent import render_ai_agent  # noqa: E402

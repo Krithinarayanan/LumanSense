@@ -12,7 +12,7 @@ from app.ui import theme, typography
 
 def render_about():
     """Renders the About page with README.md preview."""
-    typography.configure_page("lumanSense", "", "System Overview & Documentation")
+    typography.configure_page("lumanSense", "app/ui/assets/favicon_small.png", "System Overview & Documentation")
     theme.apply_theme("base.css", "dashboard.css")
     typography.render_page_header("About LumanSense", "System Overview & Documentation")
 

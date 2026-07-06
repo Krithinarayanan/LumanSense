@@ -57,7 +57,7 @@ def _run_async(coro):
 
 def render_ai_agent():
     typography.configure_page(
-        "lumanSense", "💡", "Real-time lighting intelligence overview"
+        "lumanSense", "app/ui/assets/favicon_small.png", "Real-time lighting intelligence overview"
     )
 
     theme.apply_theme("base.css", "agent.css")

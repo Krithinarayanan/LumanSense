@@ -62,6 +62,13 @@
                 "run",
                 "app/mcp/trend_analyzer.py"
             ]
+        },
+        "carbon-intensity-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "app/mcp/carbon_intensity_service.py"
+            ]
         }
     }
 }

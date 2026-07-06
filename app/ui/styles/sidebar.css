@@ -104,8 +104,10 @@ section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
     width: 100%;
 }
 
-div.block-container {
-    padding-left: 96px !important;
+div.block-container, [data-testid="stAppViewBlockContainer"], .stMainBlockContainer {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    max-width: 96% !important;
 }
 
 .activity-icon svg {
@@ -113,4 +115,10 @@ div.block-container {
     height: 18px;
     stroke: currentColor;
     fill: none;
+}
+
+/* Eliminate default Streamlit sidebar layout shift/gap */
+[data-testid="stMain"], [data-testid="stAppViewMain"], section.main {
+    margin-left: 0px !important;
+    padding-left: 0px !important;
 }

@@ -18,10 +18,10 @@ Traditional municipal street-lighting systems operate on static timers or basic 
 LumanSense addresses these issues through **predictive and reactive street-lighting control**:
 * **Reactive Actuation**: Dims or brightens streetlights in real-time based on current pedestrian detections classified using hysteresis filters (e.g., normal activity, spikes, clearing, low activity).
 * **Predictive Planning**: Leverages a Markov Chain model to forecast pedestrian transition probabilities across zones (e.g., if a pedestrian enters Zone A, they are likely to transition to Zone B in future steps) and establishes a proactive brightness schedule.
-* **Intelligent Actuation Blending**: Combines predictive forecasts and real-time reactive signals to compute the optimal blended brightness percentage:
+* **Intelligent Actuation Blending (Safety-First Envelope)**: Combines predictive forecasts and real-time reactive signals using a non-linear fail-safe envelope that prevents prediction dimming when active pedestrians are detected:
 
 $$
-\text{Brightness}_{\text{blended}} = (\text{Forecast}_{\text{prob}} \times \text{Brightness}_{\text{plan}}) + ((1 - \text{Forecast}_{\text{prob}}) \times \text{Brightness}_{\text{reactive}})
+\text{Brightness}_{\text{blended}} = \max\left(\text{Brightness}_{\text{reactive}}, \text{Forecast}_{\text{prob}} \times \text{Brightness}_{\text{plan}}\right)
 $$
 * **Grid Carbon Intensity-Aware Dimming**: Dynamically scales the blended brightness depending on real-time carbon intensity ($gCO_{2}eq/kWh$) retrieved from the ElectricityMaps API (defaulting to a global grid average of $320\ gCO_{2}eq/kWh$):
 

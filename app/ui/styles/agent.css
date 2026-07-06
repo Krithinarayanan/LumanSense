@@ -5,6 +5,16 @@
     color: #ffffff;
 }
 
+/* Lock main page scrolling when the AI Agent page is active */
+[data-testid="stAppViewContainer"]:has(.st-key-ai_right_panel),
+[data-testid="stAppViewContainer"]:has([data-key="ai_right_panel"]),
+.main:has(.st-key-ai_right_panel),
+.main:has([data-key="ai_right_panel"]),
+.block-container:has(.st-key-ai_right_panel),
+.block-container:has([data-key="ai_right_panel"]) {
+    overflow: hidden !important;
+}
+
 .luman-panel {
     background: var(--surface, #1a1d27);
     border: 1px solid var(--border, rgba(255, 255, 255, .08));
@@ -68,48 +78,110 @@
     margin-top: 4px;
 }
 
-div[data-testid="stVerticalBlock"]:has(> div.st-key-suggested_queries) {
-    margin-bottom: 4px;
+/* Gemini left panel styling using Streamlit key container */
+.st-key-ai_left_panel,
+[data-key="ai_left_panel"] {
+    position: sticky !important;
+    top: 20px !important;
+    background-color: #1e1e24 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 12px !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
 }
 
-.st-key-suggested_queries div[data-testid="stButton"]>button {
-    background-color: #1a1d24 !important;
-    border: 1px solid #2a2f3a !important;
+/* Gemini right conversation panel using Streamlit key container */
+.st-key-ai_right_panel,
+[data-key="ai_right_panel"] {
+    background-color: #131314 !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    max-height: calc(100vh - 230px) !important;
+    overflow-y: auto !important;
+}
+
+/* Custom scrollbar for right conversation panel */
+.st-key-ai_right_panel::-webkit-scrollbar,
+[data-key="ai_right_panel"]::-webkit-scrollbar {
+    width: 6px;
+}
+
+.st-key-ai_right_panel::-webkit-scrollbar-track,
+[data-key="ai_right_panel"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.st-key-ai_right_panel::-webkit-scrollbar-thumb,
+[data-key="ai_right_panel"]::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.st-key-ai_right_panel::-webkit-scrollbar-thumb:hover,
+[data-key="ai_right_panel"]::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Gemini-inspired glowing gradient header */
+.gemini-gradient-header {
+    background: linear-gradient(90deg, #4285f4 0%, #9b72cb 40%, #ff52da 70%, #ff8f00 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 700 !important;
+    font-size: 22px !important;
+    letter-spacing: -0.3px !important;
+}
+
+/* Reduce gap between suggested queries vertical buttons */
+.st-key-suggested_queries_vertical [data-testid="stVerticalBlock"],
+[data-key="suggested_queries_vertical"] [data-testid="stVerticalBlock"] {
+    gap: 4px !important;
+}
+
+/* Gemini-styled vertical query prompt list */
+.st-key-suggested_queries_vertical div[data-testid="stButton"]>button,
+[data-key="suggested_queries_vertical"] div[data-testid="stButton"]>button {
+    background-color: #1e1f20 !important;
+    border: 1px solid #3c4043 !important;
     border-radius: 10px !important;
-    color: #c9d1d9 !important;
+    color: #e3e3e3 !important;
     text-align: left !important;
     white-space: normal !important;
-    height: 92px !important;
+    min-height: 34px !important;
+    height: auto !important;
     width: 100% !important;
-    padding: 14px 16px !important;
-    font-size: 13px !important;
+    padding: 6px 10px !important;
+    font-size: 12.5px !important;
     font-weight: 400 !important;
     line-height: 1.4 !important;
     display: flex !important;
-    align-items: flex-start !important;
+    align-items: center !important;
     justify-content: flex-start !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-    transition: all 0.15s ease-in-out !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease-in-out !important;
+    margin-bottom: 4px !important;
 }
 
-.st-key-suggested_queries div[data-testid="stButton"]>button:hover {
-    background-color: #1e293b !important;
-    border-color: #60a5fa !important;
+.st-key-suggested_queries_vertical div[data-testid="stButton"]>button:hover,
+[data-key="suggested_queries_vertical"] div[data-testid="stButton"]>button:hover {
+    background-color: #2e2f30 !important;
+    border-color: #a87ffb !important; /* purple accent */
     color: #ffffff !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+    transform: translateX(3px) !important; /* slide in slightly */
 }
 
-.st-key-suggested_queries div[data-testid="stButton"]>button:active {
-    transform: translateY(0px) !important;
+.st-key-suggested_queries_vertical div[data-testid="stButton"]>button:active,
+[data-key="suggested_queries_vertical"] div[data-testid="stButton"]>button:active {
+    transform: translateX(0px) !important;
 }
 
-.st-key-suggested_queries div[data-testid="stButton"]>button p {
-    font-size: 13px !important;
+.st-key-suggested_queries_vertical div[data-testid="stButton"]>button p,
+[data-key="suggested_queries_vertical"] div[data-testid="stButton"]>button p {
+    font-size: 12.5px !important;
     line-height: 1.4 !important;
+    margin: 0 !important;
     white-space: normal !important;
-}
-
-.st-key-suggested_queries div[data-testid="column"] {
-    padding: 0 6px !important;
 }

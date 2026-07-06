@@ -1,17 +1,27 @@
-[data-testid="stHeader"] {
-    visibility: hidden;
+[data-testid="stHeader"],
+[data-testid="stHeaderDecoration"],
+.stDeployButton,
+.stDecoration {
+    display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 [data-testid="stToolbar"] {
-    visibility: hidden;
+    display: none !important;
 }
 
 .stApp {
     background: var(--bg-page);
 }
 
+[data-testid="stAppViewBlockContainer"],
 .block-container {
-    padding: 24px 32px;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+    padding-left: 32px !important;
+    padding-right: 32px !important;
     max-width: 100%;
 }
 

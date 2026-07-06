@@ -42,13 +42,7 @@
                 "app/mcp/critic_mcp.py"
             ]
         },
-        "linear-regression-mcp": {
-            "command": "uv",
-            "args": [
-                "run",
-                "app/mcp/linear_regression.py"
-            ]
-        },
+
         "stats-mcp": {
             "command": "uv",
             "args": [

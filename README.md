@@ -127,6 +127,10 @@ graph LR
 * **ControllerMCP** ([controller_service.py](app/mcp/controller_service.py)): Mock hardware interface for adjusting lamp brightness.
 * **EnergyMCP** ([energy_service.py](app/mcp/energy_service.py)): Computes estimated energy savings relative to a baseline brightness level (defaults to 90%).
 * **K-Means Clusterer MCP** ([k_means_clusterer.py](app/mcp/k_means_clusterer.py)): Clusters pedestrian-EMA feature vectors to identify specific traffic congestion patterns.
+* **Carbon Intensity MCP** ([carbon_intensity_service.py](app/mcp/carbon_intensity_service.py)): Fetches real-time grid carbon intensity using the ElectricityMaps API or falls back to a global baseline of 320 gCO2eq/kWh.
+* **Critic MCP** ([critic_mcp.py](app/mcp/critic_mcp.py)): Exposes auditing interfaces for validating lighting controller safety decisions and checking historical footfalls/predictions.
+* **Stats MCP** ([stats_server.py](app/mcp/stats_server.py)): Evaluates mathematical traffic distribution probability densities.
+* **Trend Analyzer MCP** ([trend_analyzer.py](app/mcp/trend_analyzer.py)): Tracks and updates Exponential Moving Averages (EMA) and categorizes active traffic trends.
 
 ---
 

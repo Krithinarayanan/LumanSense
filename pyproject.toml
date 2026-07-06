@@ -2,6 +2,7 @@
 name = "luman-sense"
 version = "0.1.0"
 description = ""
+license = "Apache-2.0"
 authors = [
     {name = "Your Name", email = "your@email.com"},
 ]

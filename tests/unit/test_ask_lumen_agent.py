@@ -1,6 +1,8 @@
-"""Unit test for the ask_luman_agent."""
-
-from app.agent.ask_luman_agent import ask_luman_agent, query_database
+from app.agent.ask_luman_agent import (
+    ask_luman_agent,
+    query_table_records,
+    query_aggregation,
+)
 
 
 def test_agent_initialization():
@@ -11,20 +13,39 @@ def test_agent_initialization():
     assert ask_luman_agent.sub_agents[0].name == "luman_sense_critic_agent"
 
 
-def test_query_database_validation():
-    """Verifies that query_database tool only allows read-only SELECT queries."""
-    # Test valid query
-    result = query_database("SELECT * FROM detection_events LIMIT 1")
-    # Result status should be success or a connection error (but not query type error)
+def test_query_table_records_validation():
+    """Verifies that query_table_records restricts table access and sanitizes inputs."""
+    # 1. Test valid query
+    result = query_table_records("detection_events", limit=1)
     assert result["status"] in ["success", "error"]
-    if result["status"] == "error":
-        assert "Only read-only SELECT queries" not in result["message"]
 
-    # Test invalid query (modification attempts)
-    bad_result = query_database("DELETE FROM detection_events")
-    assert bad_result["status"] == "error"
-    assert "Only read-only SELECT queries are allowed" in bad_result["message"]
+    # 2. Test invalid table name
+    bad_table_result = query_table_records("sqlite_master", limit=1)
+    assert bad_table_result["status"] == "error"
+    assert "Unauthorized or invalid table" in bad_table_result["message"]
 
-    bad_result2 = query_database("DROP TABLE detection_events")
-    assert bad_result2["status"] == "error"
-    assert "Only read-only SELECT queries are allowed" in bad_result2["message"]
+    # 3. Test invalid column filter
+    bad_col_result = query_table_records(
+        "detection_events",
+        filters={"malicious_column; --": "value"}
+    )
+    assert bad_col_result["status"] == "error"
+    assert "Unauthorized or invalid filter column" in bad_col_result["message"]
+
+
+def test_query_aggregation_validation():
+    """Verifies that query_aggregation validates operations and whitelist constraints."""
+    # 1. Test valid aggregation
+    result = query_aggregation("COUNT", "*", "detection_events")
+    assert result["status"] in ["success", "error"]
+
+    # 2. Test invalid aggregation operation
+    bad_op_result = query_aggregation("DELETE", "*", "detection_events")
+    assert bad_op_result["status"] == "error"
+    assert "Unauthorized or invalid aggregation operation" in bad_op_result["message"]
+
+    # 3. Test invalid column
+    bad_col_result = query_aggregation("AVG", "malicious_col", "detection_events")
+    assert bad_col_result["status"] == "error"
+    assert "Unauthorized or invalid column" in bad_col_result["message"]
+

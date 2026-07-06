@@ -109,10 +109,8 @@ def _compute_brightness_and_decision(
     plan_brightness = zone_plan["brightness"]
     forecast_prob = zone_plan["prob dist"]
 
-    # Calculate reactive + planning blended brightness
-    blended_brightness = (
-        forecast_prob * plan_brightness + (1 - forecast_prob) * brightness
-    )
+    # Safety-First Blending Envelope: reactive presence always overrides predictive dimming
+    blended_brightness = max(brightness, forecast_prob * plan_brightness)
 
     # Calculate carbon scaling factor: C_scale = 1.0 - max(0, (Intensity - 150) / 2000)
     # Bounded between 0.80 (20% max dimming penalty) and 1.00 (no penalty)

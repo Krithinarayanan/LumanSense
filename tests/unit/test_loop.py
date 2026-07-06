@@ -58,28 +58,47 @@ async def test_carbon_scaling_decision():
     zone_plan = {"brightness": 90, "prob dist": 0.5}
 
     # Test 1: Clean Grid (100 gCO2eq/kWh) -> c_scale = 1.0
-    # blended = 0.5 * 90 + 0.5 * 60 = 75
-    # target = 75 * 1.0 = 75
+    # blended = max(60, 0.5 * 90) = max(60, 45) = 60
+    # target = 60 * 1.0 = 60
     brightness, decision = _compute_brightness_and_decision(event, zone_plan, carbon_intensity=100.0)
-    assert brightness == 75.0
+    assert brightness == 60.0
     assert decision.carbon_intensity == 100.0
     assert decision.co2_saved_grams > 0.0
 
-    # Test 2: Dirty Grid (550 gCO2eq/kWh) -> c_scale = 1.0 - (550-150)/2000 = 0.8
-    # target = 75 * 0.8 = 60
+    # Test 2: Dirty Grid (550 gCO2eq/kWh) -> c_scale = 0.8
+    # target = 60 * 0.8 = 48
     brightness_dirty, decision_dirty = _compute_brightness_and_decision(event, zone_plan, carbon_intensity=550.0)
-    assert brightness_dirty == 60.0
+    assert brightness_dirty == 48.0
     assert decision_dirty.carbon_intensity == 550.0
 
     # Test 3: Safety Floor enforcement under high carbon intensity (1000 gCO2eq/kWh)
     # NORMAL_ACTIVITY (pedestrians active) -> safety floor is 30%
-    # If we force a low blended brightness: plan = 30%, prob dist = 1.0 -> blended = 30%
-    # With carbon intensity = 1000, c_scale = 1.0 - (1000-150)/2000 = 0.575 -> capped at 0.8
-    # target = 30 * 0.8 = 24.
-    # Final brightness should be max(24, 30) = 30.
-    low_zone_plan = {"brightness": 30, "prob dist": 1.0}
-    brightness_clamped, decision_clamped = _compute_brightness_and_decision(event, low_zone_plan, carbon_intensity=1000.0)
-    assert brightness_clamped == 30.0  # Clamped to safetyfloor of active zone
+    # With carbon intensity = 1000, c_scale = 0.8
+    # If we force a low blended brightness: plan = 30%, prob dist = 1.0 -> blended = max(60, 30) = 60 -> target = 48 -> remains 48
+    # If we force a low reactive brightness by using a LOW_ACTIVITY event (reactive is 30%):
+    # blended = max(30, 0.0 * 30) = 30.
+    # target = 30 * 0.8 = 24. Low activity safety floor is 15 -> remains 24.
+    low_event = DetectionEvent(
+        eventid=2,
+        event_type=EventType.LOW_ACTIVITY,
+        pedestrians=5,
+        timestamp=datetime.now(),
+        ema=5.0,
+        trend="STABLE",
+        delta=0.0,
+        flag=True,
+        zone="A"
+    )
+    low_zone_plan = {"brightness": 10, "prob dist": 1.0} # blended = max(30, 10) = 30.
+    # target = 30 * 0.8 = 24 -> 24 is above safety floor of 15.
+    brightness_low, decision_low = _compute_brightness_and_decision(low_event, low_zone_plan, carbon_intensity=550.0)
+    assert brightness_low == 24.0
+
+    # Test 4: Pre-warming brightness check (reactive is 30%, predictive is 90%, prob dist = 0.6)
+    # blended = max(30, 0.6 * 90) = max(30, 54) = 54
+    prewarm_zone_plan = {"brightness": 90, "prob dist": 0.6}
+    brightness_prewarm, decision_prewarm = _compute_brightness_and_decision(low_event, prewarm_zone_plan, carbon_intensity=100.0)
+    assert brightness_prewarm == 54.0
 
 
 if __name__ == "__main__":

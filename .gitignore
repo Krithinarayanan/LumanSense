@@ -206,3 +206,8 @@ tools/a2a-inspector/
 # DB files
 *.db
 
+# Brand assets / report documents kept locally but ignored
+image.png
+luman_sense_architecture.png
+zone_transitions_report.pdf
+

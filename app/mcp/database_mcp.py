@@ -26,7 +26,19 @@ DB_FILE = os.path.abspath(os.path.join(_current_dir, "../../luman_sense.db"))
 
 
 def get_connection():
-    return sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE)
+    # Dynamically verify and migrate schema if missing carbon tracking columns
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT carbon_intensity FROM decision_events LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute("ALTER TABLE decision_events ADD COLUMN carbon_intensity REAL DEFAULT 320.0")
+            cursor.execute("ALTER TABLE decision_events ADD COLUMN co2_saved_grams REAL DEFAULT 0.0")
+            conn.commit()
+        except Exception:
+            pass
+    return conn
 
 
 # ── Core Database Operations ──
@@ -60,9 +72,18 @@ def setup_database():
             reactive_brightness INTEGER,
             brightness INTEGER,
             reason TEXT,
-            energy_saved_watts INTEGER
+            energy_saved_watts INTEGER,
+            carbon_intensity REAL,
+            co2_saved_grams REAL
         )
     """)
+    # Run migration in case table already exists without columns
+    try:
+        cursor.execute("ALTER TABLE decision_events ADD COLUMN carbon_intensity REAL DEFAULT 320.0")
+        cursor.execute("ALTER TABLE decision_events ADD COLUMN co2_saved_grams REAL DEFAULT 0.0")
+    except Exception:
+        pass  # Columns already exist
+
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS zone_config (
@@ -153,6 +174,8 @@ def save_detection_event(event={}):
 
 def save_decision_event(event={}):
     conn = get_connection()
+    carbon_intensity = 320.0
+    co2_saved_grams = 0.0
     if event is not None:
         if isinstance(event, dict):
             timestamp = event.get("timestamp")
@@ -163,6 +186,8 @@ def save_decision_event(event={}):
             brightness_to_lamp = event.get("brightness_to_lamp")
             energy_saved_watts = event.get("energy_saved_watts")
             reason = event.get("reason")
+            carbon_intensity = event.get("carbon_intensity", 320.0)
+            co2_saved_grams = event.get("co2_saved_grams", 0.0)
         else:
             timestamp = event.timestamp
             zone = event.zone
@@ -178,13 +203,15 @@ def save_decision_event(event={}):
             brightness_to_lamp = event.brightness_to_lamp
             energy_saved_watts = event.energy_saved_watts
             reason = event.reason
+            carbon_intensity = getattr(event, "carbon_intensity", 320.0)
+            co2_saved_grams = getattr(event, "co2_saved_grams", 0.0)
 
     conn.execute(
         """
         INSERT INTO decision_events
             (timestamp, zone, state, pred_brightness, reactive_brightness,
-             brightness, energy_saved_watts, reason)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             brightness, energy_saved_watts, reason, carbon_intensity, co2_saved_grams)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             str(timestamp),
@@ -195,6 +222,8 @@ def save_decision_event(event={}):
             brightness_to_lamp,
             energy_saved_watts,
             reason,
+            carbon_intensity,
+            co2_saved_grams,
         ),
     )
     conn.commit()
@@ -411,6 +440,10 @@ def load_all_data():
             "SELECT SUM(energy_saved_watts) FROM decision_events"
         ).fetchone()[0]
         or 0,
+        "total_co2_saved": conn.execute(
+            "SELECT SUM(co2_saved_grams) FROM decision_events"
+        ).fetchone()[0]
+        or 0.0,
     }
     pedestrian_chart = pd.read_sql_query(
         """
@@ -438,6 +471,8 @@ def load_all_data():
                reactive_brightness AS "Reactive Brightness",
                brightness AS "Brightness to Lamp",
                energy_saved_watts AS "Energy Saved (W)",
+               carbon_intensity AS "Carbon Intensity (g/kWh)",
+               co2_saved_grams AS "CO2 Saved (g)",
                reason AS "Reason"
         FROM decision_events ORDER BY timestamp DESC LIMIT 30
     """,
@@ -448,7 +483,8 @@ def load_all_data():
         SELECT t.zone AS Zone, SUM(t.pedestrians) AS Pedestrians,
                COUNT(c.state) AS Dimming_Actions_Taken,
                AVG(c.brightness) AS Avg_Brightness,
-               SUM(c.energy_saved_watts) AS Total_Energy_Saved
+               SUM(c.energy_saved_watts) AS Total_Energy_Saved,
+               SUM(c.co2_saved_grams) AS Total_CO2_Saved
         FROM detection_events t
         LEFT JOIN decision_events c ON t.zone=c.zone AND t.timestamp=c.timestamp
         GROUP BY t.zone

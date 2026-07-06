@@ -20,7 +20,8 @@ from app.events.event_bus import event_queue
 from app.events.event_types import EventType
 from app.mcp.database_mcp import save_decision_event, save_detection_event
 from app.mcp.database_mcp import setup_database as _setup_database
-from app.mcp.energy_service import calculate_energy_saved
+from app.mcp.energy_service import calculate_energy_saved, calculate_co2_saved
+from app.mcp.carbon_intensity_service import get_grid_carbon_intensity
 
 logger = logging.getLogger("luman_sense")
 
@@ -92,13 +93,14 @@ async def _save_detection_record(
 
 
 def _compute_brightness_and_decision(
-    event, zone_plan: dict
+    event, zone_plan: dict, carbon_intensity: float = 320.0
 ) -> tuple[float, DecisionEvent]:
-    """Calculates actuation brightness and creates a DecisionEvent.
+    """Calculates carbon-aware actuation brightness and creates a DecisionEvent.
 
     Args:
         event: The DetectionEvent instance.
         zone_plan: The planning dictionary containing forecast probability and brightness plan.
+        carbon_intensity: The real-time grid carbon intensity.
 
     Returns:
         A tuple of (brightness_to_lamp, decision_event).
@@ -107,9 +109,31 @@ def _compute_brightness_and_decision(
     plan_brightness = zone_plan["brightness"]
     forecast_prob = zone_plan["prob dist"]
 
-    brightness_to_lamp = (
+    # Calculate reactive + planning blended brightness
+    blended_brightness = (
         forecast_prob * plan_brightness + (1 - forecast_prob) * brightness
     )
+
+    # Calculate carbon scaling factor: C_scale = 1.0 - max(0, (Intensity - 150) / 2000)
+    # Bounded between 0.80 (20% max dimming penalty) and 1.00 (no penalty)
+    c_scale = 1.0 - max(0.0, (carbon_intensity - 150.0) / 2000.0)
+    c_scale = max(0.80, min(1.0, c_scale))
+
+    # Apply carbon scaling factor to the blended brightness
+    target_brightness = blended_brightness * c_scale
+
+    # Safety floor override:
+    # 30% safety floor if pedestrians are active, 15% safety floor if low activity
+    if event.event_type == EventType.LOW_ACTIVITY:
+        safety_min = 15.0
+    else:
+        safety_min = 30.0
+
+    brightness_to_lamp = max(target_brightness, safety_min)
+
+    # Calculate energy and CO2 savings
+    energy_saved = calculate_energy_saved(brightness_to_lamp)
+    co2_saved = calculate_co2_saved(energy_saved, carbon_intensity)
 
     decision = DecisionEvent(
         eventid=event.eventid,
@@ -117,8 +141,10 @@ def _compute_brightness_and_decision(
         event_type=event.event_type.value,
         brightness=brightness,
         reason=get_decision_reason(event.event_type, event.pedestrians),
-        energy_saved_watts=calculate_energy_saved(brightness_to_lamp),
+        energy_saved_watts=energy_saved,
         timestamp=event.timestamp,
+        carbon_intensity=carbon_intensity,
+        co2_saved_grams=co2_saved,
     )
     return brightness_to_lamp, decision
 
@@ -152,6 +178,8 @@ async def _save_decision_record(
         "reactive_brightness": decision.brightness,
         "brightness_to_lamp": brightness_to_lamp,
         "cluster_label": cluster_label,
+        "carbon_intensity": decision.carbon_intensity,
+        "co2_saved_grams": decision.co2_saved_grams,
     }
     if hasattr(agent, "call_tool"):
         await agent.call_tool("database-mcp", "save_decision_event", decision_data)
@@ -193,6 +221,7 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
         await get_traffic_clusters(agent)
     count = 0
     sum_energy_saved = 0
+    sum_co2_saved = 0.0
     sum_brightness = 0
     more_events = True
 
@@ -217,6 +246,8 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
             reason="initial state",
             energy_saved_watts=calculate_energy_saved(50),
             timestamp=datetime.now().strftime("%H:%M"),
+            carbon_intensity=320.0,
+            co2_saved_grams=0.0,
         )
         last_brightness_to_lamp[z] = 50.0
 
@@ -274,8 +305,32 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
             await _save_detection_record(agent, event, forecast_prob, cluster_label)
 
             if event.flag:
+                # Fetch carbon intensity from MCP service or Python import
+                carbon_intensity = 320.0
+                if hasattr(agent, "call_tool"):
+                    try:
+                        res_ci = await agent.call_tool(
+                            "carbon-intensity-mcp",
+                            "get_grid_carbon_intensity",
+                            {"region": "US-CA"}
+                        )
+                        carbon_intensity = res_ci.get("carbon_intensity", 320.0)
+                    except Exception:
+                        try:
+                            # Fallback to local import if tool call fails
+                            res_ci = get_grid_carbon_intensity("US-CA")
+                            carbon_intensity = res_ci.get("carbon_intensity", 320.0)
+                        except Exception:
+                            pass
+                else:
+                    try:
+                        res_ci = get_grid_carbon_intensity("US-CA")
+                        carbon_intensity = res_ci.get("carbon_intensity", 320.0)
+                    except Exception:
+                        pass
+
                 brightness_to_lamp, decision = _compute_brightness_and_decision(
-                    event, zone_plan
+                    event, zone_plan, carbon_intensity
                 )
                 last_decisions[zone] = decision
                 last_brightness_to_lamp[zone] = brightness_to_lamp
@@ -301,6 +356,8 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
                 reason="error in event receipt",
                 energy_saved_watts=calculate_energy_saved(50),
                 timestamp=datetime.now().strftime("%H:%M"),
+                carbon_intensity=320.0,
+                co2_saved_grams=0.0,
             )
             # Exit gracefully
             more_events = False
@@ -311,6 +368,7 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
 
         count += 1
         sum_energy_saved += decision.energy_saved_watts
+        sum_co2_saved += getattr(decision, "co2_saved_grams", 0.0)
         sum_brightness += decision.brightness
         if event:
             log(
@@ -327,6 +385,7 @@ async def run_luman_sense_loop(agent: ToolContext, iterations=30):
 
     logger.info("[SUMMARY]")
     logger.info("Total energy saved: %.2f W", sum_energy_saved)
+    logger.info("Total CO2 saved: %.3f g", sum_co2_saved)
     avg_brightness = sum_brightness / count if count > 0 else 0.0
     logger.info("Average brightness: %.2f", avg_brightness)
     await fetch_analytics(agent)
@@ -377,7 +436,10 @@ def log(
         int(brigtness_to_lamp),
     )
     logger.info(
-        "\n[ENERGY]\n Estimated Energy Saved : %.2f W", decision.energy_saved_watts
+        "\n[ENERGY]\n Estimated Energy Saved : %.2f W\n Carbon Intensity      : %.2f g/kWh\n Estimated CO2 Saved    : %.3f g",
+        decision.energy_saved_watts,
+        getattr(decision, "carbon_intensity", 320.0),
+        getattr(decision, "co2_saved_grams", 0.0),
     )
     logger.info("=" * 60)
 

@@ -16,6 +16,9 @@ zone_summary_column_config = {
     "Total_Energy_Saved": layout.number_column(
         "Total Energy Saved (W)", width="small", format="%.2f"
     ),
+    "Total_CO2_Saved": layout.number_column(
+        "Total CO2 Saved (g)", width="small", format="%.3f"
+    ),
 }
 
 detection_table_column_config = {
@@ -42,6 +45,12 @@ decision_table_column_config = {
     "Brightness to Lamp": layout.number_column("To Lamp", width="small", format="%d%%"),
     "Energy Saved (W)": layout.number_column(
         "Energy (W)", width="small", format="%.2f"
+    ),
+    "Carbon Intensity (g/kWh)": layout.number_column(
+        "CO2 Intensity", width="small", format="%.2f"
+    ),
+    "CO2 Saved (g)": layout.number_column(
+        "CO2 Saved (g)", width="small", format="%.3f"
     ),
     "Reason": layout.text_column("Reason", width="large"),
 }

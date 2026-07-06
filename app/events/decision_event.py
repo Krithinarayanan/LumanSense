@@ -28,3 +28,5 @@ class DecisionEvent:
     reason: str
     energy_saved_watts: int
     timestamp: datetime
+    carbon_intensity: float = 320.0
+    co2_saved_grams: float = 0.0

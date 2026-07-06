@@ -27,6 +27,11 @@ ENERGY_ICON = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
   <line x1="23" y1="11" x2="23" y2="13"></line>
 </svg>"""
 
+LEAF_ICON = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.58 0 8C17 14.5 15.5 15 11 20z"></path>
+  <path d="M19 2L11 10"></path>
+</svg>"""
+
 
 def build_dashboard_cards(kpis):
     lightning_optimization = (
@@ -34,7 +39,7 @@ def build_dashboard_cards(kpis):
         * (kpis["detection_count"] - kpis["decision_count"])
         / kpis["detection_count"]
     )
-    c1, c2, c3, c4, c5 = layout.columns(5, gap="small")
+    c1, c2, c3, c4, c5, c6 = layout.columns(6, gap="small")
     with PanelContainer("dashboard-container"):
         kpi_card(
             c1,
@@ -70,4 +75,11 @@ def build_dashboard_cards(kpis):
             "Energy Saved",
             f"{kpis['total_saved']:.2f} W",
             "Cumulative energy saved (watts) from all dimming decisions",
+        )
+        kpi_card(
+            c6,
+            LEAF_ICON,
+            "CO2 Offset",
+            f"{kpis.get('total_co2_saved', 0.0):.2f} g",
+            "Estimated CO2 emissions offset (grams) based on grid carbon intensity",
         )

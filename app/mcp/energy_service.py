@@ -27,5 +27,27 @@ def calculate_energy_saved(
     return energy_saved
 
 
+@mcp.tool()
+def calculate_co2_saved(
+    energy_saved_watts: float,
+    carbon_intensity: float,
+    duration_hours: float = 1.0
+) -> float:
+    """Calculates CO2 saved in grams based on energy saved and carbon intensity.
+
+    Args:
+        energy_saved_watts: Energy saved in watts.
+        carbon_intensity: Grid carbon intensity in gCO2eq/kWh.
+        duration_hours: Time interval in hours (defaults to 1.0).
+
+    Returns:
+        The estimated CO2 saved in grams.
+    """
+    # energy_saved_kwh = (watts * hours) / 1000
+    energy_saved_kwh = (energy_saved_watts * duration_hours) / 1000.0
+    co2_saved_grams = energy_saved_kwh * carbon_intensity
+    return round(co2_saved_grams, 3)
+
+
 if __name__ == "__main__":
     mcp.run()

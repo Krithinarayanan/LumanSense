@@ -207,11 +207,11 @@ def render_suggested_queries():
         {"icon": "⚡", "text": "What is the total energy saved?"},
         {"icon": "🌿", "text": "What is the total CO2 offset across all zones?"},
         {"icon": "📊", "text": "Compare CO2 emissions with vs. without LumanSense"},
+        {"icon": "🕵️", "text": "Audit recent carbon dimming decisions"},
         {
             "icon": "🔮",
             "text": "Predict the state distribution after 3 steps for Zone A",
         },
-        {"icon": "🕵️", "text": "Audit recent carbon dimming decisions"},
     ]
 
     suggested_query = None

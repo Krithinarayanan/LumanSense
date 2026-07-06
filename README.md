@@ -155,6 +155,8 @@ Tracks dimming actuations and performance details:
 * `brightness` (INTEGER) (Final Actuation)
 * `energy_saved_watts` (INTEGER)
 * `reason` (TEXT)
+* `carbon_intensity` (REAL) (Grid emission factor in gCO2eq/kWh)
+* `co2_saved_grams` (REAL) (Calculated offset in grams)
 
 ---
 

@@ -36,6 +36,22 @@ $$
 
 ---
 
+## 🌿 Grid Carbon-Awareness
+
+### 1. Carbon-Aware Scaling & ElectricityMaps API
+LumanSense interfaces with the [ElectricityMaps API](https://api.electricitymaps.com) to retrieve real-time grid emissions factors in $gCO_{2}eq/kWh$. If the environment lacks the `ELECTRICITY_MAPS_API_KEY` credential, the system defaults to a **global average baseline of $320\ gCO_{2}eq/kWh$**.
+This value is selected based on reports from the International Energy Agency (IEA) on global power generation emission factors. It represents a typical average grid carbon footprint during transition energy mixes (balancing fossil coal/gas baseline plants with nuclear, hydro, solar, and wind assets).
+
+### 2. Industry Standard: Green Software Foundation
+Our grid-aware demand shaping logic strictly adheres to the standards defined by the **Green Software Foundation (GSF)**. The core philosophy is to run resource-intensive workloads (or increase street-lighting brightness) when clean renewables are peaking, and restrict usage (dim streetlights dynamically) when fossil-fuel sources dominate the grid.
+* **Reference:** Read more about [Carbon-Aware SDK and Software Carbon Intensity (SCI) metrics](https://greensoftware.foundation).
+
+### 3. Biological Standard: Weber-Fechner's Law
+The carbon scaling factor is capped at $0.80$ (a maximum 20% power reduction) and bounded by a safety envelope floor ($\text{Safety}_{\text{minimum}} \in [15\%, 30\%]$). This is justified by the **Weber-Fechner Law** of human sensory perception, which dictates that human perception of light is logarithmic, not linear:
+$$\text{Perceived Sensation} \propto \log(\text{Physical Stimulus})$$
+* **Why it's Safe:** A $20\%$ physical drop in electrical power/brightness yields less than a $7\%$ reduction in perceived illumination to the human eye. This allows LumanSense to save up to $20\%$ in carbon emissions during dirty grid peaks while maintaining virtually identical safety and visibility for citizens on roadway corridors (governed by safety standards like **ANSI/IES RP-8-18** and **EN 13201**).
+---
+
 ## 🏗️ Architecture
 
 LumanSense is built using the **Google ADK (Agent Development Kit)** and a series of **FastMCP servers** that decouple database access, machine learning clustering, and hardware simulation.
@@ -233,18 +249,3 @@ This project uses the following datasets for training and simulation logic:
 * **Traffic Prediction Dataset**: fedesoriano. (2021). *Traffic Prediction Dataset*. Kaggle. Available at: [https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset](https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset)
 
 ---
-
-## 🌿 Grid Carbon-Awareness & Justifications
-
-### 1. Carbon-Aware Scaling & ElectricityMaps API
-LumanSense interfaces with the [ElectricityMaps API](https://api.electricitymaps.com) to retrieve real-time grid emissions factors in $gCO_{2}eq/kWh$. If the environment lacks the `ELECTRICITY_MAPS_API_KEY` credential, the system defaults to a **global average baseline of $320\ gCO_{2}eq/kWh$**.
-* **Justification of the 320 gCO2eq/kWh Default:** This value is selected based on reports from the International Energy Agency (IEA) on global power generation emission factors. It represents a typical average grid carbon footprint during transition energy mixes (balancing fossil coal/gas baseline plants with nuclear, hydro, solar, and wind assets).
-
-### 2. Industry Standard: Green Software Foundation
-Our grid-aware demand shaping logic strictly adheres to the standards defined by the **Green Software Foundation (GSF)**. The core philosophy is to run resource-intensive workloads (or increase street-lighting brightness) when clean renewables are peaking, and restrict usage (dim streetlights dynamically) when fossil-fuel sources dominate the grid.
-* **Reference:** Read more about [Carbon-Aware SDK and Software Carbon Intensity (SCI) metrics](https://greensoftware.foundation).
-
-### 3. Biological Standard: Weber-Fechner's Law
-The carbon scaling factor is capped at $0.80$ (a maximum 20% power reduction) and bounded by a safety envelope floor ($\text{Safety}_{\text{minimum}} \in [15\%, 30\%]$). This is justified by the **Weber-Fechner Law** of human sensory perception, which dictates that human perception of light is logarithmic, not linear:
-$$\text{Perceived Sensation} \propto \log(\text{Physical Stimulus})$$
-* **Why it's Safe:** A $20\%$ physical drop in electrical power/brightness yields less than a $7\%$ reduction in perceived illumination to the human eye. This allows LumanSense to save up to $20\%$ in carbon emissions during dirty grid peaks while maintaining virtually identical safety and visibility for citizens on roadway corridors (governed by safety standards like **ANSI/IES RP-8-18** and **EN 13201**).

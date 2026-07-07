@@ -1,8 +1,15 @@
 """Unit tests for the critic MCP server functions."""
 
+import pytest
 import uuid
 from app.mcp.critic_mcp import get_energy_statistics
-from app.mcp.database_mcp import save_decision_event
+from app.mcp.database_mcp import save_decision_event, setup_database
+
+
+@pytest.fixture(autouse=True)
+def init_db():
+    """Initializes the database tables before running each test."""
+    setup_database()
 
 
 def test_get_energy_statistics_empty_zone():

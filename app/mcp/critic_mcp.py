@@ -106,6 +106,10 @@ def get_energy_statistics(zone: str):
             "total_energy_saved_watts": 0,
             "average_brightness_percent": 0.0,
             "total_decisions": 0,
+            "average_energy_saved_watts": 0.0,
+            "max_energy_saved_watts": 0,
+            "average_pred_brightness": 0.0,
+            "average_reactive_brightness": 0.0,
         }
 
 
